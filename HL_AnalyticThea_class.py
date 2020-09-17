@@ -67,7 +67,7 @@ class HL_Thea():
         f1 = p[1]
         k1 = f1 * 575 * np.exp(-21400 / (self.Temp_0 * self.R))
         Z1 = np.exp(self.rho_I * k1 * (z - self.get_zCr(p)) / np.sqrt(self.Acc_0) \
-            + np.log(self.rho_0 / (self.rho_I - self.rho_0)))
+            + np.log(self.rho_Cr / (self.rho_I - self.rho_Cr)))
         rho1 = self.rho_I * Z1 / (1 + Z1)
 
         return rho1, k1, Z1
@@ -93,21 +93,25 @@ class HL_Thea():
         return drho_dt_arr
 
     def res_0(self, p, z, d):
-        return d - self.model_0(z,p)
+
+        res = d - self.model_0(z,p)[0]
+        return res
 
     def res_1(self, p, z, d):
-        return d - self.model_1(z,p)
+        res = d - self.model_1(z,p)[0]
+        return res
 
     def fit_f0(self):
         p = [self.f0_init, self.f1_init]
-        p_fit = leastsq(self.res_0, p, args = (self.z_meas[self.rho_meas <= self.rho_Cr], \
-        self.rho_meas[self.rho_meas <= self.rho_Cr]))[0]
+        p_fit = leastsq(self.res_0, p, \
+                args = (self.z_meas[self.rho_meas < self.rho_Cr], self.rho_meas[self.rho_meas < self.rho_Cr]))[0]
         return p_fit[0]
 
     def fit_f1(self):
         p = [self.f0_init, self.f1_init]
-        p_fit = leastsq(self.res_1, p, args = (self.z_meas[self.rho_meas > self.rho_Cr], \
-                self.rho_meas[self.rho_meas > self.rho_Cr]))[0]
+
+        p_fit = leastsq(self.res_1, p, \
+                args = (self.z_meas[self.rho_meas > self.rho_Cr], self.rho_meas[self.rho_meas > self.rho_Cr]))[0]
         return p_fit[1]
 
     def get_f0(self):
@@ -118,7 +122,7 @@ class HL_Thea():
 
     def get_zCr(self, p):
         if self.opti == True:
-            f0 = self.fit_f0
+            f0 = self.fit_f0()
         else:
             f0 = p[0]
 
@@ -138,7 +142,7 @@ class HL_Thea():
         t055 = (1 / (k0 * self.Acc_0)) * np.log((self.rho_I - self.rho_0) \
                 / (self.rho_I - self.rho_Cr))
 
-        for i in range(1, len(z)):
+        for i in range(len(z)):
             if rho_H[i] <= self.rho_Cr:
                 age_H.append((1 / (k0 * self.Acc_0)) * np.log((self.rho_I - self.rho_0) \
                         / (self.rho_I - rho_H[i])))
