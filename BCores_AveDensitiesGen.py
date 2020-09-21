@@ -49,7 +49,7 @@ filenames_all = ["B29_2_acc_rate_d18O.tab", "B17_2_acc_rate_d18O.tab", "B18_2_ac
 #filenames = ["B16_2_acc_rate_d18O.tab", "B17_2_acc_rate_d18O.tab", "B18_2_acc_rate_d18O.tab", "B21_2_acc_rate_d18O.tab"]
 filenames_chosen = filenames_all
 i = 0
-N_points = [100,50,70,100,70,100,70,80,70,70,100,80,80]
+N_points = [100,50,70,100,70,100,70,80,70,70,50,80,80]
 for file in filenames_chosen:
     dens.append(calc_AveDens(path, file, N_points[i]))
     i += 1

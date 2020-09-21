@@ -68,7 +68,7 @@ class Cores():
         if plotFig:
             import matplotlib as mpl
             mpl.rcParams['mathtext.fontset'] = 'stix'
-            mpl.rcParams['font.size'] = 22
+            mpl.rcParams['font.size'] = 24
             mpl.rcParams['font.family'] = 'STIXGeneral'
 
             figCore, axCore = plt.subplots(ns, figsize=(12,10))
@@ -112,10 +112,10 @@ class Cores():
         if plotFig:
             import matplotlib as mpl
             mpl.rcParams['mathtext.fontset'] = 'stix'
-            mpl.rcParams['font.size'] = 22
+            mpl.rcParams['font.size'] = 28
             mpl.rcParams['font.family'] = 'STIXGeneral'
-            fig2Core, ax2Core = plt.subplots(ns, figsize=(12,10),sharex=True)
-            ax2Core[0].set_title(self.name)
+            fig2Core, ax2Core = plt.subplots(ns, figsize=(12,9),sharex=True)
+            ax2Core[0].set_title(self.name, fontsize=40)
 
 
         for i in range(ns):
@@ -135,6 +135,20 @@ class Cores():
             if saveFig:
                 fig2Core.savefig('Figures/Core_LT_'+self.name+'.eps')
         return dfs_LT
+
+    def SampleResolution(self, dataSlice):
+        depth = self.df_d18O['depth']
+        depthSlice = depth[(depth >= dataSlice[0]) & (depth <= dataSlice[1])]
+
+        diffDepth = np.round(np.diff(depthSlice), decimals=4)
+        diffUnique = np.unique(diffDepth)
+        diffMax = diffDepth.max()
+        diffMin = diffDepth.min()
+
+        diff = [diffDepth, diffUnique, diffMax, diffMin]
+        return diff
+
+
 
 
 #coreName = 'B18'

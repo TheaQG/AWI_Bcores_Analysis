@@ -14,9 +14,11 @@ def calc_dens(path, filename):
 
     depthIce = data[names[2]]; deltaDepthIce = np.diff(depthIce)
     depthWE = data[names[3]]; deltaDepthWE = np.diff(depthWE)
+
     dens = deltaDepthWE / deltaDepthIce
+    d18O = data[names[5]]
     #print(depthIce, deltaDepthIce)
-    return dens*1000, depthIce[:-1], depthWE[:-1]
+    return dens*1000, depthIce[:-1], depthWE[:-1], d18O[:-1]
 
 
 '''
@@ -46,13 +48,13 @@ f_save = 'DepthDensity_Bcores_lowRes.xlsx'
 writer = pd.ExcelWriter(f_save, engine='xlsxwriter')
 writer.save()
 
-df = pd.DataFrame({'iceDepth': dens[0][1], 'density': dens[0][0], 'weDepth': dens[0][2]})
+df = pd.DataFrame({'iceDepth': dens[0][1], 'density': dens[0][0], 'weDepth': dens[0][2], 'd18O': dens[0][3]})
 writer = pd.ExcelWriter(f_save, engine='openpyxl')
 df.to_excel(writer, sheet_name=coreNames_chosen[0], index=False)
 writer.save()
 
 for i in range(1, len(filenames_chosen)):
-    df = pd.DataFrame({'iceDepth': dens[i][1], 'density': dens[i][0], 'weDepth': dens[i][2]})
+    df = pd.DataFrame({'iceDepth': dens[i][1], 'density': dens[i][0], 'weDepth': dens[i][2], 'd18O': dens[i][3]})
     writer = pd.ExcelWriter(f_save, engine='openpyxl', mode='a')
     df.to_excel(writer, sheet_name=coreNames_chosen[i], index=False)
     writer.save()

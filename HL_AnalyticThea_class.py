@@ -103,8 +103,12 @@ class HL_Thea():
 
     def fit_f0(self):
         p = [self.f0_init, self.f1_init]
-        p_fit = leastsq(self.res_0, p, \
-                args = (self.z_meas[self.rho_meas < self.rho_Cr], self.rho_meas[self.rho_meas < self.rho_Cr]))[0]
+        if np.count_nonzero([self.rho_meas < self.rho_Cr]) > 0:
+            p_fit = leastsq(self.res_0, p, \
+                    args = (self.z_meas[self.rho_meas < self.rho_Cr], self.rho_meas[self.rho_meas < self.rho_Cr]))[0]
+        else:
+            p_fit = p
+
         return p_fit[0]
 
     def fit_f1(self):
