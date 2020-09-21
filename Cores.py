@@ -4,6 +4,7 @@ from pandas import ExcelWriter
 import matplotlib.pyplot as plt
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
 '''
     Class to handle North Greenland Transverse B cores from AWI.
     Needs data for at least density, d18O isotope and volcanic eruption depth locations
@@ -36,7 +37,7 @@ class Cores():
     def volcIceDepth(self):
         depthIce = np.asarray(self.df_dens['iceDepth'])
         density = np.asarray(self.df_dens['density'])
-        depthWE = np.asarray(depthIce*density/1000)
+        depthWE = np.asarray(self.df_dens['weDepth'])
         volcWE_use = self.FindVolcErup()
 
         idx = []
@@ -46,7 +47,7 @@ class Cores():
         volc_depthIce = depthIce[idx]
         return volc_depthIce
 
-    def plotCore(self):
+    def plotCore(self, saveFig=False, plotFig=True):
 
         variables = [self.df_d18O, self.df_DEP, self.df_ECM]
         varNames = ['d18O', 'cond', 'ECM']
@@ -64,20 +65,27 @@ class Cores():
         for i in range(len(delItems)):
             del variables[delItems[i]]; del varNames[delItems[i]]; del yLabels[delItems[i]]#yLabels.remove(yLabels[variables.index(a)])
 
+        if plotFig:
+            import matplotlib as mpl
+            mpl.rcParams['mathtext.fontset'] = 'stix'
+            mpl.rcParams['font.size'] = 22
+            mpl.rcParams['font.family'] = 'STIXGeneral'
 
-        figCore, axCore = plt.subplots(ns, figsize=(18,10))
-        for i in range(ns):
-            axCore[i].plot(variables[i]['depth'], variables[i][varNames[i]])
-            axCore[i].set(xlabel='Depth [m]', ylabel=yLabels[i], xlim=(variables[0]['depth'].iloc[0], variables[0]['depth'].iloc[-1]))
-            for j in range(len(volcDepthIce)):
-                axCore[i].axvline(x = volcDepthIce[j],color='k')
+            figCore, axCore = plt.subplots(ns, figsize=(12,10))
+            axCore[0].set_title(self.name + ' full dataset')
+            for i in range(ns):
+                axCore[i].plot(variables[i]['depth'], variables[i][varNames[i]])
+                axCore[i].set(xlabel='Depth [m]', ylabel=yLabels[i], xlim=(variables[0]['depth'].iloc[0], variables[0]['depth'].iloc[-1]))
+                for j in range(len(volcDepthIce)):
+                    axCore[i].axvline(x = volcDepthIce[j],color='k')
 
-        figCore.tight_layout()
-        figCore.savefig('Core'+self.name+'.png', dpi=600)
+            figCore.tight_layout()
+            if saveFig:
+                figCore.savefig('Figures/Core'+self.name+'.eps')
 
         return
 
-    def getData_LakiToTambora(self):
+    def getData_LakiToTambora(self, saveFig=False, plotFig=True):
         volcDepthIce = self.volcIceDepth()
         loc_Tambora = volcDepthIce[1]
         loc_Laki = volcDepthIce[2]
@@ -97,23 +105,35 @@ class Cores():
         for i in range(len(delItems)):
             del variables[delItems[i]]; del varNames[delItems[i]]; del yLabels[delItems[i]]
 
+
+
         LT_idx = []; LT_idxPlot = []
         dfs_LT = []; dfs_LTplot = []
-        fig2Core, ax2Core = plt.subplots(ns, figsize=(18,10))
+        if plotFig:
+            import matplotlib as mpl
+            mpl.rcParams['mathtext.fontset'] = 'stix'
+            mpl.rcParams['font.size'] = 22
+            mpl.rcParams['font.family'] = 'STIXGeneral'
+            fig2Core, ax2Core = plt.subplots(ns, figsize=(12,10),sharex=True)
+            ax2Core[0].set_title(self.name)
+
 
         for i in range(ns):
             LT1 = np.nonzero(variables[i]['depth'].gt(loc_Tambora)); LT1plot = np.nonzero(variables[i]['depth'].gt(loc_Tambora-1))
             LT2 = np.nonzero(variables[i]['depth'].lt(loc_Laki)); LT2plot = np.nonzero(variables[i]['depth'].lt(loc_Laki+1))
             LT_idx.append(np.intersect1d(LT1,LT2)); LT_idxPlot.append(np.intersect1d(LT1plot,LT2plot))
             dfs_LT.append(variables[i].iloc[list(LT_idx[i])]); dfs_LTplot.append(variables[i].iloc[list(LT_idxPlot[i])])
+            if plotFig:
+                ax2Core[i].plot(dfs_LTplot[i]['depth'], dfs_LTplot[i][varNames[i]])
+                ax2Core[i].set(ylabel=yLabels[i])
+                ax2Core[i].axvline(x=loc_Tambora, color='k', alpha=0.2, ls='--')
+                ax2Core[i].axvline(x=loc_Laki, color='k', alpha=0.2, ls='--')
 
-            ax2Core[i].plot(dfs_LTplot[i]['depth'], dfs_LTplot[i][varNames[i]])
-            ax2Core[i].set(xlabel='Depth [m]', ylabel=yLabels[i])
-            ax2Core[i].axvline(x=loc_Tambora, color='k')
-            ax2Core[i].axvline(x=loc_Laki, color='k')
-#        print(variables[2].iloc[list(LT_idx)])
-        fig2Core.tight_layout()
-        fig2Core.savefig('Core_LT_'+self.name+'.png', dpi=600)
+        if plotFig:
+            ax2Core[-1].set(xlabel='Depth [m]')
+            fig2Core.tight_layout()
+            if saveFig:
+                fig2Core.savefig('Figures/Core_LT_'+self.name+'.eps')
         return dfs_LT
 
 

@@ -12,16 +12,17 @@ def calc_dens(path, filename):
           'formats': (np.float, np.float, np.float, np.float, np.float, np.float)},)
     names = data.dtype.names
 
-    depthIce = data[names[2]]
-    depthWE = data[names[3]]
-    dens = depthWE / depthIce
-    return dens*1000, depthIce, depthWE
-
+    depthIce = data[names[2]]; deltaDepthIce = np.diff(depthIce)
+    depthWE = data[names[3]]; deltaDepthWE = np.diff(depthWE)
+    dens = deltaDepthWE / deltaDepthIce
+    #print(depthIce, deltaDepthIce)
+    return dens*1000, depthIce[:-1], depthWE[:-1]
 
 
 '''
     Use above function to calculate densities for all B-cores.
 '''
+
 dens = []
 path = "../Data/datasets/B_cores_AWI/Densities/"
 filenames_all = ["B16_2_acc_rate_d18O.tab", "B17_2_acc_rate_d18O.tab", "B18_2_acc_rate_d18O.tab", "B19_2_acc_rate_d18O.tab", "B20_2_acc_rate_d18O.tab", "B21_2_acc_rate_d18O.tab", "B22_2_acc_rate_d18O.tab",
@@ -33,9 +34,14 @@ for file in filenames_chosen:
     dens.append(calc_dens(path, file))
 
 
+
 '''
     Create and save files with depth-density profile data
 '''
+
+coreNames_all = ['B16', 'B17','B18', 'B19', 'B20', 'B21', 'B22', 'B23', 'B26', 'B27', 'B28', 'B29', 'B30']
+coreNames_chosen = coreNames_all
+
 f_save = 'DepthDensity_Bcores_lowRes.xlsx'
 writer = pd.ExcelWriter(f_save, engine='xlsxwriter')
 writer.save()
