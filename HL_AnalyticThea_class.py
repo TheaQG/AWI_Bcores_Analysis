@@ -58,7 +58,9 @@ class HL_Thea():
     def model_0(self, z, p):
         f0 = p[0]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
-        Z0 = np.exp(self.rho_I * k0 * z + np.log(self.rho_0 / (self.rho_I - self.rho_0)))
+        rho_o = self.calc_dens0(p)
+
+        Z0 = np.exp(self.rho_I * k0 * z + np.log(rho_o / (self.rho_I - rho_o)))
         rho0 = self.rho_I * Z0 / (1 + Z0)
 
         return rho0, k0, Z0
@@ -85,9 +87,10 @@ class HL_Thea():
     def drho_dt(self, z, rho, p):
         rho0, k0, Z0 = self.model_0(z,p)
         rho1, k1, Z1 = self.model_1(z,p)
+        rho_o = self.calc_dens0(p)
 
         drho_dt_arr = np.zeros_like(z)
-        drho_dt_arr[z <= self.get_zCr(p)] = k0 * self.Acc_0 * (self.rho_I - self.rho_0)
+        drho_dt_arr[z <= self.get_zCr(p)] = k0 * self.Acc_0 * (self.rho_I - rho_o)
         drho_dt_arr[z > self.get_zCr(p)] = k1 * np.sqrt(self.Acc_0)
 
         return drho_dt_arr
@@ -113,9 +116,12 @@ class HL_Thea():
 
     def fit_f1(self):
         p = [self.f0_init, self.f1_init]
+        if np.count_nonzero([self.rho_meas > self.rho_Cr]) > 0:
+            p_fit = leastsq(self.res_1, p, \
+                    args = (self.z_meas[self.rho_meas > self.rho_Cr], self.rho_meas[self.rho_meas > self.rho_Cr]))[0]
+        else:
+            p_fit = p
 
-        p_fit = leastsq(self.res_1, p, \
-                args = (self.z_meas[self.rho_meas > self.rho_Cr], self.rho_meas[self.rho_meas > self.rho_Cr]))[0]
         return p_fit[1]
 
     def get_f0(self):
@@ -131,10 +137,11 @@ class HL_Thea():
             f0 = p[0]
 
         k0 = f0*11*np.exp(-10160/(self.R*self.Temp_0))
+        rho_o = self.calc_dens0(p)
 
         return (1 / (self.rho_I * k0)) * \
                 (np.log((self.rho_Cr) / (self.rho_I - self.rho_Cr)) \
-                - np.log((self.rho_0) / (self.rho_I - self.rho_0)))
+                - np.log((rho_o) / (self.rho_I - rho_o)))
 
     def time_scale_HL(self, z, rho_H, p):
         age_H = []
@@ -142,13 +149,14 @@ class HL_Thea():
         f1 = p[1]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
         k1 = f1 * 575 * np.exp(-21400 / (self.Temp_0 * self.R))
+        rho_o = self.calc_dens0(p)
 
-        t055 = (1 / (k0 * self.Acc_0)) * np.log((self.rho_I - self.rho_0) \
+        t055 = (1 / (k0 * self.Acc_0)) * np.log((self.rho_I - rho_o) \
                 / (self.rho_I - self.rho_Cr))
 
         for i in range(len(z)):
             if rho_H[i] <= self.rho_Cr:
-                age_H.append((1 / (k0 * self.Acc_0)) * np.log((self.rho_I - self.rho_0) \
+                age_H.append((1 / (k0 * self.Acc_0)) * np.log((self.rho_I - rho_o) \
                         / (self.rho_I - rho_H[i])))
 
             elif rho_H[i] > self.rho_Cr:
@@ -170,10 +178,11 @@ class HL_Thea():
         depth = np.zeros_like(rho_arr)
         idx_0 = np.where(rho_arr <= self.rho_Cr)[0]
         idx_1 = np.where(rho_arr > self.rho_Cr)[0]
+        rho_o = self.calc_dens0(p)
 
         if len(idx_0) != 0:
             depth[idx_0] = (1 / (self.rho_I * k0)) * (np.log(rho_arr[idx_0] / (self.rho_I - rho_arr[idx_0]))\
-            - np.log(self.rho_0 / (self.rho_I - self.rho_0)))
+            - np.log(rho_o / (self.rho_I - rho_o)))
         else:
             pass
 
@@ -206,6 +215,14 @@ class HL_Thea():
                         'zCO': zCO, 'drho_dz': drho_dz, 'drho_dt': drho_dt, 'ageHL': age}
 
         return model_results
+
+    def calc_dens0(self, p):
+        f0 = p[0]
+        k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
+        hIn = self.z_meas[0]
+
+        rho_surf = self.rho_I / (((self.rho_I - self.rho_0)/(self.rho_0)) * np.exp(hIn*self.rho_I*k0) + 1)
+        return rho_surf
 
     def get_zCO(self):
         return self.model(np.arange(0,1500,0.1))['zCO']
