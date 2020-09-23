@@ -5,16 +5,64 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-'''
-    Class to handle North Greenland Transverse B cores from AWI.
-    Needs data for at least density, d18O isotope and volcanic eruption depth locations
-    and takes ECM, DEP, chemical data if available.
-
-    Returns dataframe of data given between the two volcanic eruptions Laki and Tambora.
-
-'''
 class Cores():
 
+    """
+        Class to handle North Greenland Transverse B cores from AWI.
+        Needs data for at least density, d18O isotope and volcanic eruption depth locations
+        and takes ECM, DEP, chemical data if available.
+
+        Returns dataframe of measured data(depth density, d18O, ECM/DEP and volcanic eruptions)
+        given between the two volcanic eruptions Laki and Tambora.
+
+    """
+
+    """
+        Methods available:
+
+            FindVolcErup:   Searches through the passed array of volcanic eruptions
+                            (measured in W.E.) and finds all non NaN values and passes
+                            floats to output.
+                    Arguments:
+                    ----------
+                    None
+
+                    Returns:
+                    --------
+                    volcWE_use      [array of floats] Containing all available
+                                    estimated volcanic eruptions for the given core.
+
+
+            volcIceDepth:   Calculates the location of passed volcanic eruptions (W.E.)
+                            in ice depth.
+                    Arguments:
+                    ---------
+                    None
+
+
+                    Returns:
+                    --------
+                    volc_depthIce   [array of floats] Containing ice depth location
+                                    of all available estimated volcanic eruptions for
+                                    given core.
+
+
+            plotCore:       Plots (and saves) figure of entire core data, depth vs
+                            d18O data, ECM/DEP/both and est. locations of eruptions.
+                    Aruments:
+                    ---------
+                    saveFig         [bool] Default: False. Save figure? Only if plotFig == True
+                    plotFig         [bool] Default: True. Plot figure?
+
+                    Returns:
+                    --------
+                    None
+
+
+            getData_LakiToTambora:
+
+            SampleResolution:
+    """
     def __init__(self, name, df_dens, df_d18O, df_ECM, df_DEP, volcWE):
         self.name = name
         self.df_dens = df_dens
