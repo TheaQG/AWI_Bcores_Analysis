@@ -56,6 +56,20 @@ class HL_Thea():
         return
 
     def model_0(self, z, p):
+        """
+            Models the first stage of densification, densities rho_0 < rho < rho_Cr.
+
+            Arguments:
+            ----------
+                z:      [1d array of floats] Depth measurements in [m]
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                rho0:   [1d array of floats] Calculated densities for 1st stage
+                k0:     [float] Arrhenius constant for 1st stage
+                Z0:     [1d array of floats] Z0 profile for 1st stage
+        """
         f0 = p[0]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
         rho_o = self.calc_dens0(p)
@@ -66,6 +80,20 @@ class HL_Thea():
         return rho0, k0, Z0
 
     def model_1(self, z, p):
+        """
+            Models the second stage of densification, densities rho_Cr < rho < rho_Co.
+
+            Arguments:
+            ----------
+                z:      [1d array of floats] Depth measurements in [m]
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                rho1:   [1d array of floats] Calculated densities for 2nd stage
+                k1:     [float] Arrhenius constant for 2nd stage
+                Z1:     [1d array of floats] Z0 profile for 2nd stage
+        """
         f1 = p[1]
         k1 = f1 * 575 * np.exp(-21400 / (self.Temp_0 * self.R))
         Z1 = np.exp(self.rho_I * k1 * (z - self.get_zCr(p)) / np.sqrt(self.Acc_0) \
@@ -75,16 +103,54 @@ class HL_Thea():
         return rho1, k1, Z1
 
     def drho_dz_0(self, z, p):
+        """
+            Calculates the change in density with depth in first stage of densification
+
+            Arguments:
+            ----------
+                z:      [1d array of floats] Depth measurements in [m]
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                Differentation of rho(z) with respect to depth z in 1st stage
+        """
+
         rho0, k0, Z0 = self.model_0(z, p)
 
         return self.rho_I**2 * k0 * Z0 * ((1 + 2*Z0) / (1 + Z0)**2)
 
     def drho_dz_1(self, z, p):
+        """
+            Calculates the change in density with depth in second stage of densification
+
+            Arguments:
+            ----------
+                z:      [1d array of floats] Depth measurements in [m]
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                Differentation of rho(z) with respect to depth z in second stage
+        """
         rho1, k1, Z1 = self.model_1(z, p)
 
         return self.rho_I**2 * k1 * Z1 * (1 / np.sqrt(self.Acc_0)) * ((1 + 2*Z1) / (1 + Z1)**2)
 
     def drho_dt(self, z, rho, p):
+        """
+            Calculates the change in density with depth in first stage of densification
+
+            Arguments:
+            ----------
+                z:      [1d array of floats] Depth measurements in [m]
+                rho:    [1d array of floats] Density
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                Differentation of rho with respect to time. For 1st and 2nd stage
+        """
         rho0, k0, Z0 = self.model_0(z,p)
         rho1, k1, Z1 = self.model_1(z,p)
         rho_o = self.calc_dens0(p)
@@ -96,15 +162,55 @@ class HL_Thea():
         return drho_dt_arr
 
     def res_0(self, p, z, d):
+        """
+            Calculates residuals - difference btw. model results and data - for 1st stage.
+
+            Arguments:
+            ----------
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+                z:      [1d array of floats] Depth measurements in [m]
+                d:      [1d array of floats] Measured density data
+
+            Returns:
+            --------
+                Returns residuals for 1st stage
+        """
+
 
         res = d - self.model_0(z,p)[0]
         return res
 
     def res_1(self, p, z, d):
+        """
+            Calculates residuals - difference btw. model results and data - for 2nd stage.
+
+            Arguments:
+            ----------
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+                z:      [1d array of floats] Depth measurements in [m]
+                d:      [1d array of floats] Measured density data
+
+            Returns:
+            --------
+                Returns residuals for 2nd stage
+        """
         res = d - self.model_1(z,p)[0]
         return res
 
     def fit_f0(self):
+        """
+            Calculates the optimal fudge f0 in first stage of densification given the residuals
+            between model and data, and given the measured density data for this stage.
+            Returns initially passed parameter f0_init if no densities below rho_Cr (no fitting possible).
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                Optimized fudge parameter f0 for first stage of densification
+        """
         p = [self.f0_init, self.f1_init]
         if np.count_nonzero([self.rho_meas < self.rho_Cr]) > 0:
             p_fit = leastsq(self.res_0, p, \
@@ -115,6 +221,19 @@ class HL_Thea():
         return p_fit[0]
 
     def fit_f1(self):
+        """
+            Calculates the optimal fudge f1 in second stage of densification given the residuals
+            between model and data, and given the measured density data for this stage.
+            Returns initially passed parameter f1_init if no densities above rho_Cr (no fitting possible).
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                Optimized fudge parameter f1 for second stage of densification
+        """
         p = [self.f0_init, self.f1_init]
         if np.count_nonzero([self.rho_meas > self.rho_Cr]) > 0:
             p_fit = leastsq(self.res_1, p, \
@@ -131,6 +250,14 @@ class HL_Thea():
         return fit_f1()
 
     def get_zCr(self, p):
+        """
+            Calculates depth of critical density rho_Cr. If opti==True, uses optimized f0
+            otherwise, uses initial f0.
+
+            Arguments:
+            ----------
+                p:      [array of 2 floats] Initial fudge parameters.
+        """
         if self.opti == True:
             f0 = self.fit_f0()
         else:
@@ -144,6 +271,25 @@ class HL_Thea():
                 - np.log((rho_o) / (self.rho_I - rho_o)))
 
     def time_scale_HL(self, z, rho_H, p):
+        """
+            Computes an estimate of age, timescale, given the best (optimized) computed
+            total HL density array.
+            Works in three stages:  rho_H < rho_Cr,
+                                    rho_Cr < rho_H < rho_I
+                                    rho_I < rho_H
+
+            Arguments:
+            ----------
+                z:      [1d array of floats] Depth measurements in [m]
+                rho_H:  [1d array of floats] Total computed HL density array
+                p:      [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                z:      [1d array of floats] Depth measurements in [m]
+                age_H:  [1d array of floats] Estimated age profile based on density estimate.
+        """
+
         age_H = []
         f0 = p[0]
         f1 = p[1]
@@ -170,6 +316,20 @@ class HL_Thea():
         return z, age_H
 
     def dens_to_depth(self, rho_arr, p):
+        """
+            Computes an estimated depth given a density array. Works in first and second stages
+            separately.
+
+            Arguments:
+            ----------
+                rho_arr:    [1d array of floats] Total computed HL density array
+                p:          [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                rho_arr:    [1d array of floats] (Estimated) density argument.
+                depth:      [1d array of floats] Estimated depth profile based on density estimate.
+        """
         f0 = p[0]
         f1 = p[1]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
@@ -196,6 +356,26 @@ class HL_Thea():
         return rho_arr, depth
 
     def model(self, z):
+        """
+            Final model. Performs computations to calculate:
+                - 'rho_HL'      :       HL estimated density profile.
+                - 'f0_fin'      :       Optimized fudge parameter
+                - 'f1_fin'      :       Optimized fudge parameter
+                - 'zCr'         :       Calculated depth of critical density
+                - 'zCO'         :       Calculated depth of close-off density
+                - 'drho_dz'     :       Estimated change of rho(z) with depth
+                - 'drho_dt'     :       Estimated change of rho(t) with time
+                - 'ageHL'       :       Estimated age profile / timescale
+
+            Arguments:
+            ----------
+                z:              [1d array of floats] Depth measurements in [m]
+
+            Returns:
+            --------
+                model_results:  [tuple]
+        """
+
         if self.opti == True:
             f0_fin = self.fit_f0()
             f1_fin = self.fit_f1()
@@ -217,6 +397,17 @@ class HL_Thea():
         return model_results
 
     def calc_dens0(self, p):
+        """
+            Calculates surface density, given density rho_meas[0] at most shallow depth z[0]
+
+            Arguments:
+            ----------
+                p:          [1d array of 2 floats] fudge parameters f0 and f1
+
+            Returns:
+            --------
+                rho_surf:   [float] Estimated density at surface
+        """
         f0 = p[0]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
         hIn = self.z_meas[0]
@@ -229,9 +420,3 @@ class HL_Thea():
 
     def __call__(self, z):
         return self.model(z)['z'], self.model(z)['rhoHL']
-#
-# hl_instance = HL_Thea(Acc_0=0.143, Temp_0=240.65)
-# hl_model = hl_instance.model(np.arange(0,200,0.1))
-# #ageH = hl_model['ageHL']
-# rhoH = hl_model['rhoHL']
-# print(rhoH)

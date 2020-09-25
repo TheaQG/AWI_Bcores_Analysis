@@ -6,6 +6,25 @@ from pandas import ExcelWriter
 import openpyxl
 
 def calc_AveDens(path, filename, N_dataPoints):
+    """
+        Function to calculate average of density measurements. Averaging over N_dataPoints.
+        Builds new depthIce and depthWE as the center of the depth interval of the averaged
+        densities.
+
+        Arguments:
+        ---------
+            filename:       [str] Depth/density .xlsx data file to average from.
+            N_dataPoints:   [int] Number of density data points to average.
+
+        Returns:
+        --------
+            densAve*1000:   [size N_Ave array of floats] Averaged densities [kg/m^3]
+            densSTD*1000:   [size N_Ave array of floats] STD of Averaged densities [kg/m^3]
+            depthIceNew:    [size N_Ave array of floats] New ice depth array
+            depthWENew:     [size N_Ave array of floats] New WE depth array
+            N_Ave:          [int] Number of datapoints averaged.
+    """
+
     data = np.genfromtxt(path + filename, delimiter='\t', skip_header=16, names=True, dtype={'names': ('Age [ka BP]', 'Age [a AD]', 'Depth ice/snow [m]', 'Depth w.e. top [m]', 'Acc rate ice [kg/m**2/a]', 'δ18O H2O [‰ SMOW]'),
           'formats': (np.float, np.float, np.float, np.float, np.float, np.float)},)
     names = data.dtype.names

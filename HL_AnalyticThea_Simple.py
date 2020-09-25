@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 '''
+    FIRST SIMPLE HERRON-LANGWAY. FURTHER DEVELOPED AS CLASS, FILE: HL_AnalyticThea_class.py
+
     Function to model density and age profiles for a given depth, using Herron-Langway dynamics.
     Models bubble close-off at density 0.550. Uses m in water equivalent (w.e.) per yea (a^-1)
 
@@ -64,6 +66,35 @@ def HL_analyticThea(z_vec, rhoSurf, bdot0, Temp0):
 
     # Return density and age profiles
     return rho_h, t
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

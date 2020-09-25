@@ -20,48 +20,27 @@ class Cores():
     """
         Methods available:
 
-            FindVolcErup:   Searches through the passed array of volcanic eruptions
-                            (measured in W.E.) and finds all non NaN values and passes
-                            floats to output.
-                    Arguments:
-                    ----------
-                    None
+            FindVolcErup(self):
+                    Searches through the passed array of volcanic eruptions
+                    (measured in W.E.) and finds all non NaN values and passes
+                    floats to output.
 
-                    Returns:
-                    --------
-                    volcWE_use      [array of floats] Containing all available
-                                    estimated volcanic eruptions for the given core.
+            volcIceDepth(self):
+                    Calculates the location of passed volcanic eruptions (W.E.)
+                    in ice depth.
 
+            plotCore(self, saveFig=False, plotFig=True)):
+                    Plots (and saves) figure of entire core data, depth vs d18O data,
+                    ECM/DEP/both and est. locations of eruptions.
 
-            volcIceDepth:   Calculates the location of passed volcanic eruptions (W.E.)
-                            in ice depth.
-                    Arguments:
-                    ---------
-                    None
+            getData_LakiToTambora(self, saveFig=False, plotFig=True):
+                Plots (and saves) figure of core data, depth vs d18O data,
+                ECM/DEP/both, between (and a little further) the eruptions Laki and Tambora,
+                along with est. locations of eruptions.
 
-
-                    Returns:
-                    --------
-                    volc_depthIce   [array of floats] Containing ice depth location
-                                    of all available estimated volcanic eruptions for
-                                    given core.
-
-
-            plotCore:       Plots (and saves) figure of entire core data, depth vs
-                            d18O data, ECM/DEP/both and est. locations of eruptions.
-                    Aruments:
-                    ---------
-                    saveFig         [bool] Default: False. Save figure? Only if plotFig == True
-                    plotFig         [bool] Default: True. Plot figure?
-
-                    Returns:
-                    --------
-                    None
-
-
-            getData_LakiToTambora:
-
-            SampleResolution:
+            SampleResolution(self, dataSlice):
+                Gives the resolution of the given dataslice: all sample sizes, the unique sample sizes,
+                the maximum and the minimum sample size.
     """
     def __init__(self, name, df_dens, df_d18O, df_ECM, df_DEP, volcWE):
         self.name = name
@@ -73,6 +52,19 @@ class Cores():
         return
 
     def FindVolcErup(self):
+        """
+            Searches through the passed array of volcanic eruptions(measured in W.E.) and finds
+            all non NaN values and passes floats to output.
+
+                Arguments:
+                ----------
+                    None
+
+                Returns:
+                --------
+                    volcWE_use      [array of floats] Containing all available estimated
+                                                      volcanic eruptions for the given core.
+        """
         volcWE_use = []
 
         for i in range(len(self.volcWE)):
@@ -83,6 +75,19 @@ class Cores():
         return volcWE_use
 
     def volcIceDepth(self):
+        """
+            Calculates the location of passed volcanic eruptions (W.E.) in ice depth.
+
+                Arguments:
+                ---------
+                    None
+
+                Returns:
+                --------
+                    volc_depthIce   [array of floats] Containing ice depth location
+                                    of all available estimated volcanic eruptions for
+                                    given core.
+        """
         depthIce = np.asarray(self.df_dens['iceDepth'])
         density = np.asarray(self.df_dens['density'])
         depthWE = np.asarray(self.df_dens['weDepth'])
@@ -96,7 +101,20 @@ class Cores():
         return volc_depthIce
 
     def plotCore(self, saveFig=False, plotFig=True):
+    """
+        Plots (and saves) figure of entire core data, depth vs d18O data, ECM/DEP/both and
+        est. locations of eruptions.
 
+            Arguments:
+            ---------
+                saveFig:        [bool] Default: False. Save figure? Only if plotFig == True
+                plotFig:        [bool] Default: True. Plot figure?
+
+            Returns:
+            --------
+                None
+
+    """
         variables = [self.df_d18O, self.df_DEP, self.df_ECM]
         varNames = ['d18O', 'cond', 'ECM']
         yLabels = ['d18O', 'DEP', 'ECM, Conductivity']
@@ -134,6 +152,20 @@ class Cores():
         return
 
     def getData_LakiToTambora(self, saveFig=False, plotFig=True):
+        """
+            Plots (and saves) figure of core data, depth vs d18O data, ECM/DEP/both, between
+            (and a little further) the eruptions Laki and Tambora, along with est. locations of eruptions.
+
+            Arguments:
+            ---------
+                saveFig:        [bool] Default: False. Save figure? Only if plotFig == True
+                plotFig:        [bool] Default: True. Plot figure?
+
+            Returns:
+            --------
+                dfs_LT:         [list] List containing data, depth, d18O data, ECM/DEP/both, between
+                                Laki and Tambora.
+        """
         volcDepthIce = self.volcIceDepth()
         loc_Tambora = volcDepthIce[1]
         loc_Laki = volcDepthIce[2]
@@ -185,6 +217,20 @@ class Cores():
         return dfs_LT
 
     def SampleResolution(self, dataSlice):
+        """
+            Gives the resolution of the given dataslice: all sample sizes, the unique sample
+            sizes, the maximum and the minimum sample size.
+
+            Arguments:
+            ----------
+                dataslice:      [array of two floats] Containiig two depth values, describing the
+                                desired depth array to examine resolution for.
+
+            Returns:
+            --------
+                diff:           [list of 4 arrays] Contains all sample sizes, the unique
+                                sample sizes, the maximum and the minimum sample size
+        """
         depth = self.df_d18O['depth']
         depthSlice = depth[(depth >= dataSlice[0]) & (depth <= dataSlice[1])]
 
@@ -195,15 +241,3 @@ class Cores():
 
         diff = [diffDepth, diffUnique, diffMax, diffMin]
         return diff
-
-
-
-
-#coreName = 'B18'
-#core_B16 = Cores(name=coreName, df_dens=pd.read_excel('DepthDensity_Bcores_lowRes.xlsx', sheet_name=coreName, index=False),
-#                 df_d18O = pd.read_excel('Depth_d18O__Bcores.xlsx', sheet_name=coreName, index=False),
-#                 df_ECM = pd.read_excel('DepthECM__B16_B18_B21.xlsx', sheet_name=coreName, index=False),
-#                 df_DEP = pd.read_excel('DepthDEP__Bcores.xlsx', sheet_name=coreName, index=False),
-#                 df_chem = pd.read_excel('DepthChem__B16_B18_B21_B29.xlsx', sheet_name=coreName, index=False),
-#                 volcWE = np.asarray(pd.read_excel('VolcanicEruptions__WE_Depth.xlsx', 'Sheet1', usecols=[coreName])))
-# B16_dfs_LT = core_B16.plotCore()
