@@ -101,20 +101,20 @@ class Cores():
         return volc_depthIce
 
     def plotCore(self, saveFig=False, plotFig=True):
-    """
-        Plots (and saves) figure of entire core data, depth vs d18O data, ECM/DEP/both and
-        est. locations of eruptions.
 
-            Arguments:
-            ---------
-                saveFig:        [bool] Default: False. Save figure? Only if plotFig == True
-                plotFig:        [bool] Default: True. Plot figure?
+        """
+            Plots (and saves) figure of entire core data, depth vs d18O data, ECM/DEP/both and
+            est. locations of eruptions.
 
-            Returns:
-            --------
-                None
+                Arguments:
+                ---------
+                    saveFig:        [bool] Default: False. Save figure? Only if plotFig == True
+                    plotFig:        [bool] Default: True. Plot figure?
 
-    """
+                Returns:
+                --------
+                    None
+        """
         variables = [self.df_d18O, self.df_DEP, self.df_ECM]
         varNames = ['d18O', 'cond', 'ECM']
         yLabels = ['d18O', 'DEP', 'ECM, Conductivity']
