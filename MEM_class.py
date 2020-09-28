@@ -2,41 +2,37 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class MEM():
-
-    def __init__(self, t_data, y):
+    def __init__(self, t_data, y_data, M):
         self.t_data = t_data
-        self.y = y
+        self.y_data = y_data
+        self.M = M
 
         return
 
-    def __call__(self, t_data, y, M = 5, N = 1000, view = True, print_coefs = False):
+    def __call__(self, t_data, y_data, M, N = None, view = True, print_coefs = False):
 
         if N == None:
-            N == np.size(y)
+            N = np.size(y_data)
 
-        mem = MEM(t_data,y)
-        power = mem.power(N, M)
+        mem = MEM(t_data, y_data, M)
+        power = mem.Power(N, M)
 
-        if view == True:
-
+        if view == True:    
             plt.ion()
             plt.clf()
             plt.subplot(211)
-            line1 = plt.plot(t_data,y)
+            line1 = plt.plot(t_data, y_data)
             plt.subplot(212)
-            line2 = plt.semilogy(power[0],power[1])
-
+            line2 = plt.semilogy(power[0], power[1])
 
         if print_coefs == True:
-            print(MEM.coef(M)[1])
+            print(MEM.Coef(M, N)[1])
 
         return power
 
-
-    def coef(self, M = 5):
-        y = self.y
+    def Coef(self, M, N):
+        y = self.y_data
         y -= np.average(y)
-        N = 1000
 
         P0 = np.sum(y**2)/N
 
@@ -63,7 +59,7 @@ class MEM():
             for k in range(0,m):
                 aa = np.append(aa,a[k])
 
-            for t in range(0,N - (m+1)):
+            for k in range(0,N - (m+1)):
                 b1[k] = b1[k] - aa[m-1]*b2[k]
                 b2[k] = b2[k+1] - aa[m-1]*b1[k+1]
 
@@ -79,14 +75,12 @@ class MEM():
 
         return (P, a, ref)
 
-    def power(self, N, M=10):
-
-        P = self.coef(M)[0]
-        a = self.coef(M)[1]
-        t_data = self.t_data
+    def Power(self, N, M):
+        P = self.Coef(M, N)[0]
+        a = self.Coef(M, N)[1]
 
         Pm = P[-1]
-        dt = t_data[1] - t_data[0]
+        dt = self.t_data[1] - self.t_data[0]
 
         i = 0. + 1.j
 
