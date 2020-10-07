@@ -17,7 +17,7 @@ class MEM():
         mem = MEM(t_data, y_data, M)
         power = mem.Power(N, M)
 
-        if view == True:    
+        if view == True:
             plt.ion()
             plt.clf()
             plt.subplot(211)
@@ -30,8 +30,9 @@ class MEM():
 
         return power
 
-    def Coef(self, M, N):
+    def Coef(self, M):
         y = self.y_data
+        N = np.size(y)
         y -= np.average(y)
 
         P0 = np.sum(y**2)/N
@@ -76,8 +77,8 @@ class MEM():
         return (P, a, ref)
 
     def Power(self, N, M):
-        P = self.Coef(M, N)[0]
-        a = self.Coef(M, N)[1]
+        P = self.Coef(M)[0]
+        a = self.Coef(M)[1]
 
         Pm = P[-1]
         dt = self.t_data[1] - self.t_data[0]
