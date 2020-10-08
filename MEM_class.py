@@ -28,7 +28,7 @@ class MEM():
         if print_coefs == True:
             print(MEM.Coef(M, N)[1])
 
-        return power
+        return power[0], power[1]
 
     def Coef(self, M):
         y = self.y_data
