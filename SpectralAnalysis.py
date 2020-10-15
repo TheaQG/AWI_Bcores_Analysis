@@ -111,8 +111,8 @@ class SignalToF():
         boundas['P0_Max'] = 10
         boundas['s_eta2_Min'] = 1e-10
         boundas['s_eta2_Max'] = 0.05
-        boundas['a1_Min'] = 1e-7
-        boundas['a1_Max'] = 0.999
+        boundas['a1_Min'] = 1e-9
+        boundas['a1_Max'] = 0.2
         boundas['s_tot2_Min'] = 1e-5
         boundas['s_tot2_Max'] = 0.5
 
