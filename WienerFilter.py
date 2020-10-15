@@ -105,7 +105,8 @@ class WienerFilter():
         Signal_data, Noise_data, All_data, fit_Params = self.fit_PSD(view=self.view_fit, print_DiffLen=True)
         filt = Signal_data[2]/All_data[2]
 
-        trans = np.exp(- ((2 * np.pi * All_data[0])**2 * 0.001) / 2)
+        trans = np.exp(- ((2 * np.pi * All_data[0])**2 ) / 2)
+        print(trans)
         transInv = 1/trans
 
 #        d18O_mean = np.mean(self.d18O_data)
