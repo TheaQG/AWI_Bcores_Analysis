@@ -8,7 +8,7 @@ class SignalToF():
     '''
 
     '''
-    def __init__(self, t, y):
+    def __init__(self, t, y, psdType):
         '''
             Arguments:
             ----------
@@ -19,6 +19,7 @@ class SignalToF():
         self.t = t
         self.y = y
         self.y = self.y - np.mean(self.y)
+        self.psdType = psdType
 
         if np.size(self.y)%2 != 0:
             print('ERROR: Give signal with even number of points.')
@@ -86,8 +87,11 @@ class SignalToF():
             returns:
             --------
         '''
+        if self.psdType == 'FFT':
+            f, P = self.fft_psd(N=8192)#fft_psd()#
+        elif self.psdType == 'MEM':
+            f, P = self.mem(M=100, N=8192)
 
-        f, P = self.fft_psd(N=8192)#fft_psd()#
         dt = self.t[1] - self.t[0]
 
 
@@ -99,7 +103,11 @@ class SignalToF():
             Signal = self.func_Signal(x, P0, s_tot2)
 
             Pmod = Noise + Signal
-            res = weights*(np.log10(y[:-1]) - np.log10(np.copy(Pmod)))
+
+            if self.psdType == 'FFT':
+                res = weights*(np.log10(y[:-1]) - np.log10(np.copy(Pmod)))
+            elif self.psdType == 'MEM':
+                res = weights*(np.log10(y) - np.log10(np.copy(Pmod)))
 
             return res
 
@@ -110,10 +118,10 @@ class SignalToF():
         boundas['P0_Min'] = 1e-15
         boundas['P0_Max'] = 10
         boundas['s_eta2_Min'] = 1e-10
-        boundas['s_eta2_Max'] = 0.05
-        boundas['a1_Min'] = 1e-9
-        boundas['a1_Max'] = 0.2
-        boundas['s_tot2_Min'] = 1e-5
+        boundas['s_eta2_Max'] = 0.1
+        boundas['a1_Min'] = 1e-7
+        boundas['a1_Max'] = 0.3
+        boundas['s_tot2_Min'] = 1e-7
         boundas['s_tot2_Max'] = 0.5
 
         if list(kwargs.keys()):
@@ -176,7 +184,11 @@ class SignalToF():
             returns:
             --------
         '''
-        w, P = self.fft_psd(N=8192)
+
+        if self.psdType == 'FFT':
+            w, P = self.fft_psd(N=8192)
+        elif self.psdType == 'MEM':
+            w, P = self.mem(M=100, N=8192)
 
         dt = self.t[1] - self.t[0]
 
