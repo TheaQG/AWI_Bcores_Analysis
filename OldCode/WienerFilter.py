@@ -4,7 +4,41 @@ from MEM_class import MEM
 from scipy.optimize import curve_fit
 
 class WienerFilter():
+    '''
+        Methods available:
+
+            __init__(self, args):
+
+            __call__(self):
+
+            calc_PSD:
+
+            fit_PSD:
+
+            deconvolve:
+
+
+    '''
     def __init__(self, name, depth_data, d18O_data, N, M, bar, view_PSD = True, view_fit = True, view_decon = True, print_DiffLen = True):
+        """
+
+                Arguments:
+                ----------
+                    name:           [str] Name of time series (core, depth, area etc.)
+                    depth_data:     [array of floats] Time series x data(depth).
+                    d18O_data:      [array of floats] Time series y data(O18, O17, D etc.)
+                    N:              [int] Number of points in PSD to generate.
+                    M:              [int] Number of poles to use in MEM.
+                    bar:            [float] Cut from signal to noise.
+                    view_PSD:       [bool] Default = True. View raw PSD data plot?
+                    view_fit:       [bool] Default = True. View fit to PSD data plot?
+                    view_decon:     [bool] Default = True. View deconvoluted data plot?
+                    print_DiffLen:  [bool] Default = True. Print diffusion length estimate?
+
+                Returns:
+                --------
+                    None
+        """
         self.depth_data = depth_data
         self.d18O_data = d18O_data
         self.N = N
@@ -18,6 +52,18 @@ class WienerFilter():
         return
 
     def __call__(self):
+        """
+
+                Arguments:
+                ----------
+                    self
+
+                Returns:
+                --------
+                    f_depth:        [array of floats] Estimate of deconvolved data, detrended.
+                    f_depth+mean:   [array of floats] Estimate of deconvolved data.
+                    fit_params:     [array of floats] Estimated fit parameters.
+        """
         f_data = self.deconvolve()
         f_depth = self.depth_data[1:-1:2]
 
@@ -32,6 +78,17 @@ class WienerFilter():
         return f_depth, f_data+np.mean(self.d18O_data), fit_params
 
     def calc_PSD(self):
+        """
+
+                Arguments:
+                ----------
+                    self
+
+                Returns:
+                --------
+                    MEM_power:      [2D array of floats] Contains frquencies and power
+                                                    of transform of time series.
+        """
         MEM_instance = MEM(t_data = self.depth_data, y_data = self.d18O_data, M = self.M)
         MEM_power = MEM_instance(t_data = self.depth_data, y_data = self.d18O_data, M = self.M, N = self.N, view = False)
 
@@ -44,13 +101,40 @@ class WienerFilter():
         return MEM_power
 
     def fit_PSD(self, view, print_DiffLen):
+        """
+
+                Arguments:
+                ----------
+
+                Functions:
+                ----------
+
+                Returns:
+                --------
+        """
         def func_Noise(w, s_eta2, a1):
+            """
+
+                    Arguments:
+                    ----------
+
+                    Returns:
+                    --------
+            """
             dz = 0.02
             return (s_eta2 * dz) / (abs(1 + a1 * np.exp(- 2 * np.pi * 1j * w * dz))**2)
 
 
 
         def func_Signal(w, p0, s_tot2):
+            """
+
+                    Arguments:
+                    ----------
+
+                    Returns:
+                    --------
+            """
             return p0 * np.exp(- (2 * np.pi * w)**2 * s_tot2)
 
 
@@ -102,6 +186,14 @@ class WienerFilter():
         return Signal_data, Noise_data, Combo_data, fit_params
 
     def deconvolve(self):
+        """
+
+                Arguments:
+                ----------
+
+                Returns:
+                --------
+        """
         Signal_data, Noise_data, All_data, fit_Params = self.fit_PSD(view=self.view_fit, print_DiffLen=True)
         filt = Signal_data[2]/All_data[2]
 

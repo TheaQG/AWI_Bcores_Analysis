@@ -13,6 +13,29 @@ from matplotlib import pyplot as plt
 
 
 class SyntheticData_Gen():
+    """
+        Methods available:
+
+            __init__(self, args): Initializes the class with input arguments.
+
+            __call__(self): Performs each step to generate synthetic data: Raw AR1 process
+                        resampling and diffusion by convolution with gaussian filter.
+
+            synthetic_AR1(self): Creates a raw first order autoregressive(AR1) process.
+
+            smooth(self, z, x, window_len = 11, window = 'hamming'): Smooths the data
+                        with a specific window type of set window size. Based on convolution
+                        of the data with a scaled specific window type.
+
+            smooth_step(self, x, window_len = 11, window = 'flat'): Same as smooth(), except
+                        it slides a window length after each calc.
+
+            diffuse(self, z, x, diff_len): Diffuses a given time series based on the passed
+                        diffusion length.
+
+            sample(self, z, x, dt = 0.005, meas_noise = 0.07): Performs discrete sampling of
+                        time series x, with a set sample size of dt.
+    """
     def __init__(self, AR1_coef, AR1_var, AR1_dt, AR1_N, diff_len, dt_sample, meas_noise):
         '''
             Initializes the class with the following arguments:

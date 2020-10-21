@@ -2,6 +2,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class MEM():
+
+    """
+        Class to determine the spectral equivalent of a time series through
+        Burg's Maximum Entropy Method (MEM), Burg 1967.
+    """
+
+    """
+        Methods available:
+
+            __init__():
+                    Initializes the class given three arguments, t, y, M.
+
+            __call__():
+                    Calling function, returns the frequency and spectral
+                    signal of the time series, (w, P).
+
+            Coef(self, M):
+                    Calculates the maximum entropy coefficients on the basis
+                    of the number of poles passed.
+
+            Power(self, N, M):
+                    Calculates the power spectrum(spectral signal) on the
+                    basis of MEM coefficients, given the number of points
+                    wanted and the number of poles passed.
+
+    """
     def __init__(self, t_data, y_data, M):
         self.t_data = t_data
         self.y_data = y_data
@@ -10,7 +36,22 @@ class MEM():
         return
 
     def __call__(self, t_data, y_data, M, N = None, view = True, print_coefs = False):
+        """
 
+                Arguments:
+                ----------
+                    t_data:         [array of floats] Time series x data.
+                    y_data:         [array of floats] Time series y data.
+                    M:              [int] Number of poles to perform MEM with
+                    N:              [int] Default: None. Number of points to perform MEM with.
+                    view:           [bool] Default: True. View plot of PSD?
+                    print_coefs:    [bool] Defulat: False. Print MEM coeffients?
+
+                Returns:
+                --------
+                    power[0]:       [array of floats] Frequencies. Transform of t_data.
+                    power[1]:       [array of floats] Power (PSD). Transform of y_data.
+        """
         if N == None:
             N = np.size(y_data)
 
@@ -31,6 +72,22 @@ class MEM():
         return power[0], power[1]
 
     def Coef(self, M):
+        """
+            On the basis of time seriess y_data and number of poles passed, M,
+            computes the coefficients according to the MEM spectral transformation
+            method.
+
+                Arguments:
+                ----------
+                    M:              [int] Number of poles to use.
+
+                Returns:
+                --------
+                    P:
+                    a:
+                    ref:
+        """
+
         y = self.y_data
         N = np.size(y)
         y -= np.average(y)
@@ -77,6 +134,21 @@ class MEM():
         return (P, a, ref)
 
     def Power(self, N, M):
+        """
+            On the basis of number of points wanted and number of poles passed,
+            computes the PSD of the time series through Burg's MEM.
+
+                Arguments:
+                ----------
+                    N:              [int] Number of points wanted.
+                    M:              [int] Number of poles passed.
+
+                Returns:
+                --------
+                    f:              [array of floats] Computed frequencies.
+                    Pf:             [array of floats] Computed power (PSD).
+        """
+
         P = self.Coef(M)[0]
         a = self.Coef(M)[1]
 

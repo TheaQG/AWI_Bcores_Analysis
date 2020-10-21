@@ -8,14 +8,63 @@ class SignalToF():
     '''
 
     '''
+    '''
+        Methods available:
+            __init__():
+                    Initializes class, given three arguments, t, y, psdType.
+                    Detrends y by subtracting the mean, to center around zero.
+                    Gives an error if len(y) is not an even number.
+
+            __call__():
+                    Call function,
+
+            fft(self, N):
+                    Method to compute the fast fourier transform of the time
+                    series passed. Computes it for N points, where N must be
+                    a power of two (FFT constraint).
+
+            fft_psd(self, N):
+                    From the computed FFT signal, this method computes the PSD
+                    of the FFT by conversion to real and positive values.
+
+            mem(self, M, N):
+                    On the basis of the MEM_class.py class, method computes the
+                    PSD through Burg's MEM. Based on M nodes and N points.
+
+            OptFilterFit(self, **kwargs):
+                    Given the psdType and from here the computed PSD signal, (f,P),
+                    estimates the optimal filter(to amplify signal and kill noise)
+                    by minimizing the residuals between the PSD and a fit made to it
+                    (fit based on empirical noise+signal models).
+
+            func_Noise(self, w, s_eta2, a1, dz):
+                    Emipirical (red) noise function to minimize according to data.
+
+            func_Signal(self, w, p0, s_tot2):
+                    Empirical signal function to minimize according to data.
+
+            convolve(self):
+                    Deconvolution of data given the found optimal filter, transfer
+                    function and data.
+
+            plotFilters(self):
+                    Method to plot transfer, optimal and restoration filter.
+
+    '''
     def __init__(self, t, y, psdType):
         '''
             Arguments:
             ----------
+                t:              [array of floats] Input time series x data.
+                y:              [array of floats] Imput time series y data.
+                psdType:        [str] {'FFT', 'MEM'}. What spectral transfor-
+                                mation method to use.
 
             returns:
             --------
+                None
         '''
+
         self.t = t
         self.y = y
         self.y = self.y - np.mean(self.y)
@@ -40,9 +89,12 @@ class SignalToF():
         '''
             Arguments:
             ----------
+                N:              [int] Number of points(must be as power of twos)
 
             returns:
             --------
+                w:              [array of floats] Frequencies, both negative and positive.
+                A:              [array of floats] Amplitude array containing real+complex values.
         '''
         dt = self.t[1] - self.t[0]
 
@@ -55,9 +107,12 @@ class SignalToF():
         '''
             Arguments:
             ----------
+                N:              [int] Number of points(must be as power of twos).
 
             returns:
             --------
+                w_pos:          [array of floats] Positive frequencies of the spectrum.
+                P:              [array of floats] The FFT-generated PSD of the time series (real and positive)
         '''
         w, s = self.fft(N)
         aS2 = np.abs(s)**2
@@ -70,10 +125,15 @@ class SignalToF():
         '''
             Arguments:
             ----------
+                M:              [int] Number of nodes to compute PSD via Burg's MEM.
+                N:              [int] Number of points to generate PSD from.
 
             returns:
             --------
+                w:              [array of floats] (Positive) frequencies.
+                P:              [array of floats] (Real and positive) values of the PSD.
         '''
+
         MEM_inst = MEM(t_data = self.t, y_data = self.y, M = M)
         w, P = MEM_inst(t_data = self.t, y_data = self.y, M = M, N = N, view = False)
 
@@ -83,10 +143,18 @@ class SignalToF():
         '''
             Arguments:
             ----------
+                **kwargs:       [tuple] Contains user specified boundaries for fit parameters
 
             returns:
             --------
+                opt_fit_dict:   [tuple] Dictionary containing estimated fit parameters
+                P_fit:          [array of floats] Estimated fit to PSD data.
+                params_fit:     [array of floats] Estimated fit parameters, in array, from scipy.optimize.
+                fit_func_val:   [array of floats] Estimated fit, from scipy.optimize.
+                fit_dict:       [tuple] Dictionary from scipy.optimize.
         '''
+
+        # Calculate the PSD throuhg either FFT or MEM
         if self.psdType == 'FFT':
             f, P = self.fft_psd(N=8192)#fft_psd()#
         elif self.psdType == 'MEM':
@@ -96,7 +164,23 @@ class SignalToF():
 
 
         def calc_res(params, x, y, dt, weights):
+            '''
+                Calculates the log residuals between data, y, and model estimated from
+                x and a given set of fit parameters.
 
+
+                Arguments:
+                ----------
+                    params:     [array of floats] Parameters to compute the model estimate from.
+                    x:          [array of floats] Data, x values.
+                    y:          [array of floats] Data, y values.
+                    dt:         [float] Spacing of x data.
+                    weights:    [array of floats] Weights to fudge residuals.
+
+                returns:
+                --------
+                    res:        [array of floats] Residuals of data vs model.
+            '''
             P0, s_eta2, s_tot2, a1 = params
 
             Noise = self.func_Noise(x, s_eta2, a1, dt)
@@ -112,8 +196,25 @@ class SignalToF():
             return res
 
         def sum2_res(params, x, y, dt, weights):
+            '''
+                Calculates the squared sum of residuals.
+
+                Arguments:
+                ----------
+                    params:     [array of floats] Parameters to compute the model estimate from.
+                    x:          [array of floats] Data, x values.
+                    y:          [array of floats] Data, y values.
+                    dt:         [float] Spacing of x data.
+                    weights:    [array of floats] Weights to fudge residuals.
+
+                returns:
+                --------
+                    sum2_res:   [float] Value of the sum of the squarred residuals.
+                                        (We seek to minimize this).
+            '''
             return np.sum(calc_res(params, x, y, dt, weights)**2)
 
+        #Define the default boundaries for the different parameters.
         boundas = {}
         boundas['P0_Min'] = 1e-15
         boundas['P0_Max'] = 10
@@ -124,6 +225,7 @@ class SignalToF():
         boundas['s_tot2_Min'] = 1e-7
         boundas['s_tot2_Max'] = 0.5
 
+        #If user has specified bounds for params, it is passed through here.
         if list(kwargs.keys()):
             print('Setting fit param boundaries to user specifics')
             for j in list(kwargs.keys()):
@@ -133,10 +235,13 @@ class SignalToF():
         elif not list(kwargs.keys()):
             print('Using default boundaries for variance and a1')
 
+        #Initial parameter guess.
         p0 = [0.005, 0.005, 0.01, 0.1]
 
+        #Weights
         weights = np.ones_like(f)*1.
 
+        #Optimization routine - minimizes residuals btw. data and model.
         params_fit, fit_func_val, fit_dict = sp.optimize.fmin_l_bfgs_b(sum2_res, p0, fprime=None, args = (f, P, dt, weights),\
                                         approx_grad=True, bounds = [(boundas['P0_Min'], boundas['P0_Max']), (boundas['s_eta2_Min'], boundas['s_eta2_Max']), \
                                         (boundas['s_tot2_Min'], boundas['s_tot2_Max']), (boundas['a1_Min'], boundas['a1_Max'])])
@@ -158,9 +263,14 @@ class SignalToF():
         '''
             Arguments:
             ----------
+                w:          [array of floats] Frequency array.
+                s_eta2:     [float] Variance of noise
+                a1:         [float] AR-1 process coefficient (red noise)
+                dz:         [float] Frequency spacing.
 
             returns:
             --------
+                Noise function corresponding to the given params.
         '''
         return (s_eta2**2 * dz) / (np.abs(1 - a1 * np.exp(- 2 * np.pi * 1j * w * dz))**2)
 
@@ -168,9 +278,13 @@ class SignalToF():
         '''
             Arguments:
             ----------
+                w:          [array of floats] Frequency array.
+                p0:         [float] Signal amplification.
+                s_tot2:     [float] Diffusion length.
 
             returns:
             --------
+                Signal function corresponding to passed params.
         '''
         return p0 * np.exp(- (2 * np.pi * w * s_tot2)**2)
 
@@ -207,7 +321,7 @@ class SignalToF():
         F_Noise = self.func_Noise(wConv, s_eta2, a1, dt)
 
         F = F_Signal / (F_Signal + F_Noise)
-        T = np.exp(- ((2 * np.pi * wConv )**2 * (s_eta2)**2)/2)
+        T = np.exp(- ((2 * np.pi * wConv * s_eta2)**2)/2)
         R = F * T**(-1)
 
         s = copy.deepcopy(self.y)
@@ -222,6 +336,13 @@ class SignalToF():
         return wConv, F, T, R, F_Signal, F_Noise, conv
 
     def plotFilters(self):
+        '''
+            Arguments:
+            ----------
+
+            returns:
+            --------
+        '''
         w, F, T, Fs, Fn, Dest = self.convolve()
 
         figOptFilt, axOptFilt = plt.subplots(figsize = (10,8))
@@ -232,14 +353,6 @@ class SignalToF():
 
         axTrans.loglog(self.t, T)
 
-
-        '''
-            Arguments:
-            ----------
-
-            returns:
-            --------
-        '''
         return
 
     def invFft(self):
