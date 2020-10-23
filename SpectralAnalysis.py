@@ -99,7 +99,7 @@ class SignalToF():
         dt = self.t[1] - self.t[0]
 
         w = np.fft.fftfreq(N, dt)
-        A = np.fft.fft(self.y, n = N) #* dt
+        A = np.fft.fft(self.y, n = N) * dt
 
         return w, A
 
@@ -117,7 +117,7 @@ class SignalToF():
         w, s = self.fft(N)
         aS2 = np.abs(s)**2
         P = (aS2[np.where(w >= 0)] + aS2[np.where(w < 0)][::-1]) / N**2
-        w_pos = w[np.where(w > 0)]
+        w_pos = w[np.where(w >= 0)]
 
         return w_pos, P
 
@@ -189,7 +189,7 @@ class SignalToF():
             Pmod = Noise + Signal
 
             if self.psdType == 'FFT':
-                res = weights*(np.log10(y[:-1]) - np.log10(np.copy(Pmod)))
+                res = weights*(np.log10(y) - np.log10(np.copy(Pmod)))
             elif self.psdType == 'MEM':
                 res = weights*(np.log10(y) - np.log10(np.copy(Pmod)))
 
