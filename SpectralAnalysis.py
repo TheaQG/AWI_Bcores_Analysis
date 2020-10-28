@@ -322,12 +322,13 @@ class SignalToF():
 
         F = F_Signal / (F_Signal + F_Noise)
         T = np.exp(- ((2 * np.pi * wConv * s_eta2)**2)/2)
+        T = ((np.sin(np.pi * wConv * dt)) / (np.pi * wConv * dt)) * T
         R = F * T**(-1)
 
         s = copy.deepcopy(self.y)
 
 
-        Rf = R
+        Rf = np.fft.fft(R) * dt
         Sf = np.fft.fft(s) * dt
 
         conv = np.fft.ifft(Sf * Rf) / dt
