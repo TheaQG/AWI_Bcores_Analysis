@@ -19,24 +19,114 @@ import copy
 import math
 
 class SpectralDecon():
+    '''
+        Methods available:
+            __init__(self, t, y, N_min):
+                    Initializes class, given three arguments, t, y, N_min.
+                    Detrends y by subtracting the mean, to center around zero.
+                    Defines the sampling, Delta = dt, as the difference between t1 and t0.
+
+            __call__():
+                    Call function,
+
+            dct(self):
+                    Method to compute the DCT, Discrete Cosine Transform, of the data.
+                    Computes for N (minimum N_min) spectral frequencies - if y.size is
+                    smaller than N_min, then N = ceil(N_min/y.size) * y.size.
+                    Based on
+
+            dct_psd(self, N):
+                    From the computed DCT signal, S, this method computes the PSD
+                    of the DCT by PSD = |S|^2.
+
+            SpectralFit(self, printFitParams=True, **kwargs):
+                    Given the computed PSD signal, (f,P), estimates parameters of noise and
+                    signal by minimizing the residuals between the PSD and a fit made to it
+                    (fit based on empirical noise+signal models).
+
+            Filters(self, sigma):
+                    Computes the spectral filters to amplify signal and minimize noise.
+
+            deconvolve(self, sigma):
+                    Computes the deconvolution of data multiplied with restoration filter.
+
+
+            func_Noise(self, w, s_eta2, a1, dz):
+                    Emipirical (red) noise function to minimize according to data.
+
+            func_Signal(self, w, p0, s_tot2):
+                    Empirical signal function to minimize according to data.
+
+
+            plotSpectrum(self):
+                    Plots the spectrum with fitted function, and visual of signal and noise.
+
+            plotFilters(self, sigma):
+                    Method to plot transfer, optimal and restoration filter.
+
+            plotDecon(self, sigma):
+                    Plot the raw and the deconvoluted data.
+    '''
 
     def __init__(self, t, y, N_min):
+        '''
+            Initialize the class instance.
+
+
+            Arguments:
+            ----------
+                t:              [array of floats] Input time series x data.
+                y:              [array of floats] Input time series y data.
+                N_min:          [int] Minimum number of points to use for spectral transform.
+
+            returns:
+            --------
+                None
+
+        '''
         self.t = t
         self.y = y
-        self.y = self.y - np.mean(self.y)
+        self.y = self.y - np.mean(self.y) # Detrending
         self.N_min = N_min
-        self.dt = self.t[1] - self.t[0]
+        self.dt = self.t[1] - self.t[0] # Setting sampling size
 
         return
 
 
 
     def __call__(self):
+        '''
+            Call function.
+
+
+            Arguments:
+            ----------
+
+            returns:
+            --------
+        '''
         return
 
 
 
     def dct(self):
+        '''
+            Computes the DCT through SciPy FFT package. Uses 2nd DCT with orthonormal normalization.
+            Frequencies are computed through a regular FFT, taking only the positive frequencies, as
+            this is in the definition of the DCT.
+            Computes for N (minimum N_min) spectral frequencies - if y.size is
+            smaller than N_min, then N = ceil(N_min/y.size) * y.size.
+
+
+            Arguments:
+            ----------
+                None
+
+            returns:
+            --------
+                freq:           [array of floats] Positive spectral frequencies, the transformed t data.
+                DCT:            [array of floats] Amplitude array of the transformed y data.
+        '''
         data = copy.deepcopy(self.y)
         depth = copy.deepcopy(self.t)
 
@@ -53,6 +143,18 @@ class SpectralDecon():
 
 
     def dct_psd(self):
+        '''
+            From the DCT method, computes the Power Spectral Density (PSD).
+
+
+            Arguments:
+            ----------
+                None
+            returns:
+            --------
+                f:              [array of floats] Positive spectral frequencies, same as in self.dct.
+                P:              [array of floats] Computed Power Spectral Density, only positive values.
+        '''
         f, S = self.dct()
         P = abs(S)**2
 
@@ -60,15 +162,46 @@ class SpectralDecon():
 
 
 
-    def idct(self):
-        return
-
-
-
     def SpectralFit(self, printFitParams=True, **kwargs):
+        '''
+
+            Arguments:
+            ----------
+                printFitParams: [bool] To print fitted parameters or not.
+                **kwargs:       [tuple] Contains user specified boundaries for fit parameters
+
+            returns:
+            --------
+                w_PSD:          [array of floats] Spectral frequencies.
+                P_PSD:          [array of floats] Power Spectral Density.
+                Pnoise:         [array of floats] Estimated noise function PSD.
+                Psignal:        [array of floats] Estimated signal function, PSD.
+                P_fit:          [array of floats] Estimated fit to PSD data.
+                opt_fit_dict:   [tuple] Dictionary containing estimated fit parameters
+                params_fit:     [array of floats] Estimated fit parameters, in array, from scipy.optimize.
+                fit_func_val:   [array of floats] Estimated fit, from scipy.optimize.
+                fit_dict:       [tuple] Dictionary from scipy.optimize.
+        '''
         f, P = self.dct_psd()
 
         def calc_res(params, x, y, dt, weights):
+            '''
+                Calculates the log residuals between data, y, and model estimated from
+                x and a given set of fit parameters.
+
+
+                Arguments:
+                ----------
+                    params:     [array of floats] Parameters to compute the model estimate from.
+                    x:          [array of floats] Data, x values.
+                    y:          [array of floats] Data, y values.
+                    dt:         [float] Spacing of x data.
+                    weights:    [array of floats] Weights to fudge residuals.
+
+                returns:
+                --------
+                    res:        [array of floats] Residuals of data vs model.
+            '''
             P0, s_eta2, s_tot2, a1 = params
 
             Noise = self.func_Noise(x, s_eta2, a1, dt)
@@ -80,7 +213,22 @@ class SpectralDecon():
             return res
 
         def sum2_res(params, x, y, dt, weights):
+            '''
+                Calculates the squared sum of residuals.
 
+                Arguments:
+                ----------
+                    params:     [array of floats] Parameters to compute the model estimate from.
+                    x:          [array of floats] Data, x values.
+                    y:          [array of floats] Data, y values.
+                    dt:         [float] Spacing of x data.
+                    weights:    [array of floats] Weights to fudge residuals.
+
+                returns:
+                --------
+                    sum2_res:   [float] Value of the sum of the squarred residuals.
+                                        (We seek to minimize this).
+            '''
             return np.sum(calc_res(params, x, y, dt, weights)**2)
 
         #Define the default boundaries for the different parameters.
@@ -143,12 +291,29 @@ class SpectralDecon():
 
         print(f'Diff. len., fit [cm]: {s_tot2_fit*100:.3f}')
 
-        return w_PSD, P_PSD, Pnoise, Psignal, P_fit
+        return w_PSD, P_PSD, Pnoise, Psignal, P_fit, opt_fit_dict, params_fit, fit_func_val, fit_dict
 
 
 
     def Filters(self, sigma):
-        w_PSD, P_PSD, Pnoise, Psignal, P_fit = self.SpectralFit()
+        '''
+            Computes spectral filters. Computes optimalfilter, OptFilter = Psignal / (Psignal + Pnoise),
+            exponential transfer function, M, and restoration filter, R = OptFilter * M^(-1).
+
+
+            Arguments:
+            ----------
+                sigma:              [float] Theoretical diffusion length to be used in transfer function.
+
+            returns:
+            --------
+                w_PSD:              [array of floats] Spectral frequencies
+                OptFilter:          [array of floats] Optimal filter, as a function of frequencies.
+                M:                  [array of floats] Transfer function, filtering due to diffusion.
+                R:                  [array of floats] Total restoration filter.
+
+        '''
+        w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _ , _, _ = self.SpectralFit(printFitParams=False)
 
         OptFilter = Psignal / (Pnoise + Psignal)
 #        sigma = 0.05#s_eta2_fit
@@ -161,6 +326,20 @@ class SpectralDecon():
 
 
     def deconvolve(self, sigma):
+        '''
+            Deconvolution of the restored spectral data, DCT(data) * R.
+            Takes in to account that data and R are of different lengths, so R is discretized
+            to a lower resolution to be able to be multiplied with the data.
+
+            Arguments:
+            ----------
+                sigma:              [float] Theoretical diffusion length to be used in transfer function.
+
+            returns:
+            --------
+                depth:              [array of floats] Original x data of time series.
+                data_decon:         [array of floats] Deconvolution of data multiplied with restoration filter.
+        '''
         data = copy.deepcopy(self.y)
         depth = copy.deepcopy(self.t)
 
@@ -214,8 +393,19 @@ class SpectralDecon():
         '''
         return p0 * np.exp(- (2 * np.pi * w * s_tot2)**2)
 
-    def plotSpectrum(self):
-        w_PSD, P_PSD, Pnoise, Psignal, P_fit = self.SpectralFit()
+    def plotSpectrum(self, showFig=True):
+        '''
+
+            Arguments:
+            ----------
+                showFig:            [bool] Show figure or not. Default: True.
+
+            returns:
+            --------
+                figPSDfit:          [mpl.figure.Figure] Matplotlib figure of PSD with signal, noise and signal+noise fit.
+                axPSDfit:           [mpl.axes._subplots.AxesSubplot] MPL axes handle.
+        '''
+        w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _, _, _ = self.SpectralFit(printFitParams=False)
 
         figPSDfit, axPSDfit = plt.subplots(figsize=(10,8))
         axPSDfit.set(ylim=(min(P_PSD)-min(P_PSD)*0.8, max(P_PSD)+max(P_PSD)*0.8), xlim=(min(w_PSD), max(w_PSD)),\
@@ -226,10 +416,24 @@ class SpectralDecon():
         axPSDfit.semilogy(w_PSD, P_fit, color='k', label='$P_{fit}$')
         axPSDfit.legend()
         axPSDfit.set_ylim((1e-12,10))
+        if not showFig:
+            plt.close()
 
-        return
+        return figPSDfit, axPSDfit
 
-    def plotFilters(self, sigma):
+    def plotFilters(self, sigma, showFig=True):
+        '''
+
+            Arguments:
+            ----------
+                sigma:              [float] Theoretical diffusion length to be used in transfer function.
+                showFig:            [bool] Show figure or not. Default: True.
+
+            returns:
+            --------
+                figFilters:          [mpl.figure.Figure] Matplotlib figure of OptFilter, M, M^(-1) and R filters.
+                axFilters:           [mpl.axes._subplots.AxesSubplot] MPL axes handle.
+        '''
         w_PSD, OptFilter, M, R = self.Filters(sigma)
 
         figFilters, axFilters = plt.subplots(figsize=(8,8))
@@ -240,11 +444,26 @@ class SpectralDecon():
         axFilters.set_ylim((10**(-2),100));
         axFilters.legend()
 
+        if not showFig:
+            plt.close()
+
         return figFilters, axFilters
 
 
 
-    def plotDecon(self, sigma):
+    def plotDecon(self, sigma, showFig=True):
+        '''
+
+            Arguments:
+            ----------
+                sigma:              [float] Theoretical diffusion length to be used in transfer function.
+                showFig:            [bool] Show figure or not. Default: True.
+
+            returns:
+            --------
+                figDecon:          [mpl.figure.Figure] Matplotlib figure of deconvoluted and raw data.
+                axDecon:           [mpl.axes._subplots.AxesSubplot] MPL axes handle.
+        '''
         depth, data_decon = self.deconvolve(sigma)
 
         figDecon, axDecon = plt.subplots(figsize=(14,7))
@@ -252,4 +471,7 @@ class SpectralDecon():
         axDecon.plot(depth,data_decon, label='decon')
         axDecon.plot(self.t,self.y, label='data')
         axDecon.legend()
+        if not showFig:
+            plt.close()
+
         return figDecon, axDecon

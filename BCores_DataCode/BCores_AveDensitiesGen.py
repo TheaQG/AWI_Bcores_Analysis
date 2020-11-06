@@ -82,7 +82,7 @@ for file in filenames_chosen:
 coreNames_all = ['B16', 'B17','B18', 'B19', 'B20', 'B21', 'B22', 'B23', 'B26', 'B27', 'B28', 'B29', 'B30']
 coreNames_chosen = coreNames_all
 
-f_save = 'DepthDensity_Bcores_lowResAve.xlsx'
+f_save = 'DepthDensity_lowResAve.xlsx'
 writer = pd.ExcelWriter(f_save, engine='xlsxwriter')
 writer.save()
 df = pd.DataFrame({'iceDepth': dens[0][2], 'density': dens[0][0], 'STD': dens[0][1], 'weDepth': dens[0][3], 'N_Ave': dens[0][4]*np.ones_like(dens[0][0])})

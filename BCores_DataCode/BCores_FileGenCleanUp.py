@@ -8,7 +8,7 @@ import openpyxl
     Loading d18O data and generating cleaned up files.
 '''
 
-path = "../Data/datasets/B_cores_AWI/"
+path = "../../Data/datasets/B_cores_AWI/"
 filename = "NGT_d18O_highres.xlsx"
 
 NGT_d18O_highres_data = pd.read_excel(path + filename, sheet_name=None)
@@ -31,7 +31,9 @@ df_B30_d18O = NGT_d18O_highres_data[headers[12]]
 
 coreNames_d18O = ['B16', 'B17', 'B18', 'B19', 'B20', 'B21', 'B22', 'B23', 'B26', 'B27', 'B28', 'B29', 'B30']
 
-f_d18O_save = 'Depth_d18O__Bcores.xlsx'
+path_save = "../../Data/datasets/B_cores_AWI/AWI_Bcores__Cleanded_xlsx/"
+
+f_d18O_save = path_save + 'Depth_d18O.xlsx'
 writer = pd.ExcelWriter(f_d18O_save, engine='xlsxwriter')
 writer.save()
 
@@ -73,7 +75,7 @@ with pd.ExcelWriter(f_d18O_save, engine='openpyxl', mode='a') as writer:
     Loading ECM, DEP and chem data and generating cleaned up files.
 '''
 
-path2 = "../Data/datasets/B_cores_AWI/"
+path2 = "../../Data/datasets/B_cores_AWI/"
 filename2 = "chemistry_conductivity_NGT93_95_all.xlsx"
 
 B_Cores_chem_cond__data = pd.read_excel(path2 + filename2, sheet_name=None)
@@ -104,7 +106,7 @@ df_B29_chem = B_Cores_chem_cond__data[headers2[15]]
 
 coreNames_DEP = ['B17', 'B18', 'B19', 'B20', 'B22', 'B23', 'B26', 'B27', 'B28']
 
-f_DEP_save = 'DepthDEP__Bcores.xlsx'
+f_DEP_save = path_save + 'DepthDEP.xlsx'
 writer = pd.ExcelWriter(f_DEP_save, engine='xlsxwriter')
 writer.save()
 
@@ -133,13 +135,39 @@ with pd.ExcelWriter(f_DEP_save, engine='openpyxl', mode='a') as writer:
     df27_DEP.to_excel(writer, sheet_name=coreNames_DEP[7], index=False)
     df28_DEP.to_excel(writer, sheet_name=coreNames_DEP[8], index=False)
 
+
+#Creating file with only actual useful DEP data
+coreNames_DEP2 = ['B18', 'B19', 'B20', 'B22', 'B23']
+
+f_DEP_save2 = path_save + 'DepthDEP__Clean.xlsx'
+writer = pd.ExcelWriter(f_DEP_save2, engine='xlsxwriter')
+writer.save()
+
+df18_DEP = pd.DataFrame({'depth': df_B18_DEP[df_B18_DEP.keys()[4]], 'cond': df_B18_DEP[df_B18_DEP.keys()[6]]})
+writer = pd.ExcelWriter(f_DEP_save, engine='openpyxl')
+df18_DEP.to_excel(writer, sheet_name=coreNames_DEP[0], index=False)
+writer.save()
+
+df19_DEP = pd.DataFrame({'depth': df_B19_DEP[df_B19_DEP.keys()[0]], 'cond': df_B19_DEP[df_B19_DEP.keys()[2]]})
+df20_DEP = pd.DataFrame({'depth': df_B20_DEP[df_B20_DEP.keys()[0]], 'cond': df_B20_DEP[df_B20_DEP.keys()[2]]})
+df22_DEP = pd.DataFrame({'depth': df_B22_DEP[df_B22_DEP.keys()[0]], 'cond': df_B22_DEP[df_B22_DEP.keys()[2]]})
+df23_DEP = pd.DataFrame({'depth': df_B23_DEP[df_B23_DEP.keys()[0]], 'cond': df_B23_DEP[df_B23_DEP.keys()[2]]})
+
+
+with pd.ExcelWriter(f_DEP_save2, engine='openpyxl', mode='a') as writer:
+    df19_DEP.to_excel(writer, sheet_name=coreNames_DEP2[1], index=False)
+    df20_DEP.to_excel(writer, sheet_name=coreNames_DEP2[2], index=False)
+    df22_DEP.to_excel(writer, sheet_name=coreNames_DEP2[3], index=False)
+    df23_DEP.to_excel(writer, sheet_name=coreNames_DEP2[4], index=False)
+
 '''
     Generating files with depth and chemical measurements
 '''
 
 coreNames_chem = ['B16', 'B18', 'B21', 'B29']
 
-f_chem_save = 'DepthChem__B16_B18_B21_B29.xlsx'
+
+f_chem_save = path_save + 'DepthChem.xlsx'
 writer = pd.ExcelWriter(f_chem_save, engine='xlsxwriter')
 writer.save()
 
@@ -170,3 +198,23 @@ with pd.ExcelWriter(f_chem_save, engine='openpyxl', mode='a') as writer:
     df18_chem.to_excel(writer, sheet_name=coreNames_chem[1], index=False)
     df21_chem.to_excel(writer, sheet_name=coreNames_chem[2], index=False)
     df29_chem.to_excel(writer, sheet_name=coreNames_chem[3], index=False)
+
+
+
+coreNames_ECM = ['B16', 'B18', 'B21']
+
+f_ECM_save = path_save + 'DepthECM.xlsx'
+writer = pd.ExcelWriter(f_ECM_save, engine='xlsxwriter')
+writer.save()
+
+df16 = pd.DataFrame({'depth': df_B16_ECM[df_B16_ECM.keys()[0]], 'ECM': df_B16_ECM[df_B16_ECM.keys()[-1]]})
+writer = pd.ExcelWriter(f_ECM_save, engine='openpyxl')
+df16.to_excel(writer, sheet_name=coreNames_ECM[0], index=False)
+writer.save()
+
+df18 = pd.DataFrame({'depth': df_B18_ECM[df_B18_ECM.keys()[1]], 'ECM': df_B18_ECM[df_B18_ECM.keys()[0]]})
+df21 = pd.DataFrame({'depth': df_B21_ECM[df_B21_ECM.keys()[5]], 'ECM': df_B21_ECM[df_B21_ECM.keys()[-1]]})
+
+with pd.ExcelWriter(f_ECM_save, engine='openpyxl', mode='a') as writer:
+    df18.to_excel(writer, sheet_name=coreNames_ECM[1], index=False)
+    df21.to_excel(writer, sheet_name=coreNames_ECM[2], index=False)

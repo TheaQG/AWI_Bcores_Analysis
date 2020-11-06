@@ -44,7 +44,7 @@ for file in filenames_chosen:
 coreNames_all = ['B16', 'B17','B18', 'B19', 'B20', 'B21', 'B22', 'B23', 'B26', 'B27', 'B28', 'B29', 'B30']
 coreNames_chosen = coreNames_all
 
-f_save = 'DepthDensity_Bcores_lowRes.xlsx'
+f_save = 'DepthDensity_lowRes.xlsx'
 writer = pd.ExcelWriter(f_save, engine='xlsxwriter')
 writer.save()
 
