@@ -162,7 +162,7 @@ class SpectralDecon():
 
 
 
-    def SpectralFit(self, printFitParams=True, **kwargs):
+    def SpectralFit(self, printFitParams=True, printDiffLen=True, printParamBounds=True,**kwargs):
         '''
 
             Arguments:
@@ -248,9 +248,11 @@ class SpectralDecon():
             for j in list(kwargs.keys()):
                 if j in list(bounds.keys()):
                     bounds[j] = kwargs[j]
-                    print(f'setting {j} as {kwargs[j]}')
+                    if printParamBounds:
+                        print(f'setting {j} as {kwargs[j]}')
         elif not list(kwargs.keys()):
-            print('Using default boundaries for variance and a1')
+            if printParamBounds:
+                print('Using default boundaries for variance and a1')
 
         #Initial parameter guess.
         p0 = [0.005, 0.005, 0.01, 0.1]
@@ -289,7 +291,8 @@ class SpectralDecon():
         s_eta2_fit = opt_fit_dict['s_eta2_fit']
         s_tot2_fit = opt_fit_dict['s_tot2_fit']
 
-        print(f'Diff. len., fit [cm]: {s_tot2_fit*100:.3f}')
+        if printDiffLen:
+            print(f'Diff. len., fit [cm]: {s_tot2_fit*100:.3f}')
 
         return w_PSD, P_PSD, Pnoise, Psignal, P_fit, opt_fit_dict, params_fit, fit_func_val, fit_dict
 
@@ -313,7 +316,7 @@ class SpectralDecon():
                 R:                  [array of floats] Total restoration filter.
 
         '''
-        w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _ , _, _ = self.SpectralFit(printFitParams=False)
+        w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _ , _, _ = self.SpectralFit(printFitParams=False, printDiffLen=False, printParamBounds=False)
 
         OptFilter = Psignal / (Pnoise + Psignal)
 #        sigma = 0.05#s_eta2_fit
@@ -408,6 +411,7 @@ class SpectralDecon():
         w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _, _, _ = self.SpectralFit(printFitParams=False)
 
         figPSDfit, axPSDfit = plt.subplots(figsize=(10,8))
+        axPSDfit.grid(linestyle='--',lw=1.3, which='both')
         axPSDfit.set(ylim=(min(P_PSD)-min(P_PSD)*0.8, max(P_PSD)+max(P_PSD)*0.8), xlim=(min(w_PSD), max(w_PSD)),\
                     ylabel='$\delta^{18}$O [\permil]', xlabel='Frequency')
         axPSDfit.semilogy(w_PSD, P_PSD, label='$P_{data}$')
