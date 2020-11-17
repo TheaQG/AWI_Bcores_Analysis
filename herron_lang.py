@@ -312,7 +312,7 @@ class HL():
         return self.model(z)['z'], self.model(z)['rho_herron']
 
 
-hl_instance = HL()
-hl_model = hl_instance.model(np.arange(0,200,0.1))
-rhoH = hl_model['rho_herron']
-print(rhoH)
+#hl_instance = HL()
+#hl_model = hl_instance.model(np.arange(0,200,0.1))
+#rhoH = hl_model['rho_herron']
+#print(rhoH)
