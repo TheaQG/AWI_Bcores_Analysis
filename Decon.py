@@ -162,7 +162,7 @@ class SpectralDecon():
 
 
 
-    def SpectralFit(self, printFitParams=True, printDiffLen=True, printParamBounds=True,**kwargs):
+    def SpectralFit(self, printFitParams=True, printDiffLen=True, printParamBounds=False,**kwargs):
         '''
 
             Arguments:
