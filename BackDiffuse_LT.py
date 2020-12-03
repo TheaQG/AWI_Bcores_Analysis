@@ -420,7 +420,7 @@ mpl.rcParams['font.family'] = 'STIXGeneral'
 coreNames = ['Crete', 'SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 
     # Selecting core name
-coreName = 'SiteG'
+coreName = 'SiteB'
 
     # Reading datafiles for specific core
 d18OData = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+coreName+'_det.txt',',')
@@ -439,7 +439,7 @@ depth_LT = d18OData['depth'][(d18OData['depth'] >= dTamb) & (d18OData['depth'] <
 d18O_LT = d18OData['d18O'][(d18OData['depth'] >= dTamb) & (d18OData['depth'] <= dLaki)]
 
     # Create instance of back diffusion
-inst = BackDiffuse(coreName, d18OData, specsCores, dTamb, dLaki, 32, diffLenData=diffLens[['Depth','sigma_o18']], densData=densities)
+inst = BackDiffuse(coreName, d18OData, specsCores, dTamb, dLaki, 34, diffLenData=diffLens[['Depth','sigma_o18']], densData=densities)
 
     # Make spectral estimate of diff len
 diffLen = inst.spectralEstimate()
