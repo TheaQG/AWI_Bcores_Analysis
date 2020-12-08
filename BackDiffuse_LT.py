@@ -279,7 +279,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000):
+    def backDiffused(self, N=2000, print_Npeaks=True):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -321,7 +321,8 @@ class BackDiffuse():
             depth, data = decon_inst.deconvolve(diffLen)
             idxPeak = signal.find_peaks(data, distance=3)[0]
             N_peaks = len(idxPeak)
-            print(len(idxPeak))
+            if print_Npeaks:
+                print(len(idxPeak))
 
             if N_peaks > self.ysInSec:
                 diffLen -= 0.0005
@@ -332,7 +333,8 @@ class BackDiffuse():
             depth, data = decon_inst.deconvolve(diffLen)
             idxPeak = signal.find_peaks(data, distance=3)[0]
             N_peaks = len(idxPeak)
-            print(len(idxPeak))
+            if print_Npeaks:
+                print(len(idxPeak))
             diffLen += 0.0001
 
         diffLen -= 0.0002
@@ -415,57 +417,57 @@ mpl.rcParams['mathtext.fontset'] = 'stix'
 mpl.rcParams['font.size'] = 22
 mpl.rcParams['font.family'] = 'STIXGeneral'
 
-
-    # Core names of cores available
-coreNames = ['Crete', 'SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
-
-    # Selecting core name
-coreName = 'SiteB'
-
-    # Reading datafiles for specific core
-d18OData = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+coreName+'_det.txt',',')
-densities = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/'+coreName+'DepthDens_w_Models.txt','\t')
-diffLens = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/'+coreName+'_DepthDiff.txt','\t')
-specsCores = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt',',')
-specIdx = specsCores['CoreName'][specsCores['CoreName'] == coreName].index[0]
-
-    # Set the specs for depth of Laki and Tambora eruptions for core
-specsCore = specsCores.iloc[specIdx]
-dTamb = np.float64(specsCore['dTamb'])
-dLaki = np.float64(specsCore['dLaki'])
-
-    # (FOR PLOTTING) Make array of only d18O data between Laki and Tamb
-depth_LT = d18OData['depth'][(d18OData['depth'] >= dTamb) & (d18OData['depth'] <= dLaki)]
-d18O_LT = d18OData['d18O'][(d18OData['depth'] >= dTamb) & (d18OData['depth'] <= dLaki)]
-
-    # Create instance of back diffusion
-inst = BackDiffuse(coreName, d18OData, specsCores, dTamb, dLaki, 34, diffLenData=diffLens[['Depth','sigma_o18']], densData=densities)
-
-    # Make spectral estimate of diff len
-diffLen = inst.spectralEstimate()
-
-    # Make model/empiric estimate of diff len
-difflenEstHL = inst.diffLenEstimateHL()
-
-    # Compute final depth/d18O back diffused data w. final diff len and No. peaks
-depth, data, diffLen, peaks = inst.backDiffused()
-
-    # Plot original data, back diffused data and peak estimations
-fig, ax = plt.subplots(figsize=(10,7))
-ax.plot(depth, data, lw=1, label='Back diffused')
-ax.plot(depth_LT, d18O_LT-np.mean(d18O_LT),color='k', lw=1, label = 'Data')
-ax.plot(depth[peaks], data[peaks],'.',lw=1, label='Estimated peaks')
-ax.set(xlabel = 'Depth [m]', ylabel = '$\delta^{18}$O [\permil]', title=coreName+'$, \sigma_{fin} =$ ' + f'{diffLen*100:.2f} [cm]')
-ax.legend(fontsize=16)
-fig.tight_layout()
-fig.savefig(coreName + '_peaks.jpg')
-
-
-    # Compute temperature estimate in [K]
-depthT, dataT = inst.DeltaToTemp()
-
-    # Plot Temperature data in [C]
-fig2, ax2 = plt.subplots(figsize=(10,7))
-ax2.plot(depthT, dataT-273.15,color='k', lw=1)
-ax2.set(xlabel = 'Depth [m]', ylabel = 'Temperature [C]', title=coreName)
-fig2.savefig(coreName + '_Temp.jpg')
+#
+#     # Core names of cores available
+# coreNames = ['Crete', 'SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+#
+#     # Selecting core name
+# coreName = 'SiteB'
+#
+#     # Reading datafiles for specific core
+# d18OData = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+coreName+'_det.txt',',')
+# densities = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/'+coreName+'DepthDens_w_Models.txt','\t')
+# diffLens = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/'+coreName+'_DepthDiff.txt','\t')
+# specsCores = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt',',')
+# specIdx = specsCores['CoreName'][specsCores['CoreName'] == coreName].index[0]
+#
+#     # Set the specs for depth of Laki and Tambora eruptions for core
+# specsCore = specsCores.iloc[specIdx]
+# dTamb = np.float64(specsCore['dTamb'])
+# dLaki = np.float64(specsCore['dLaki'])
+#
+#     # (FOR PLOTTING) Make array of only d18O data between Laki and Tamb
+# depth_LT = d18OData['depth'][(d18OData['depth'] >= dTamb) & (d18OData['depth'] <= dLaki)]
+# d18O_LT = d18OData['d18O'][(d18OData['depth'] >= dTamb) & (d18OData['depth'] <= dLaki)]
+#
+#     # Create instance of back diffusion
+# inst = BackDiffuse(coreName, d18OData, specsCores, dTamb, dLaki, 34, diffLenData=diffLens[['Depth','sigma_o18']], densData=densities)
+#
+#     # Make spectral estimate of diff len
+# diffLen = inst.spectralEstimate()
+#
+#     # Make model/empiric estimate of diff len
+# difflenEstHL = inst.diffLenEstimateHL()
+#
+#     # Compute final depth/d18O back diffused data w. final diff len and No. peaks
+# depth, data, diffLen, peaks = inst.backDiffused()
+#
+#     # Plot original data, back diffused data and peak estimations
+# fig, ax = plt.subplots(figsize=(10,7))
+# ax.plot(depth, data, lw=1, label='Back diffused')
+# ax.plot(depth_LT, d18O_LT-np.mean(d18O_LT),color='k', lw=1, label = 'Data')
+# ax.plot(depth[peaks], data[peaks],'.',lw=1, label='Estimated peaks')
+# ax.set(xlabel = 'Depth [m]', ylabel = '$\delta^{18}$O [\permil]', title=coreName+'$, \sigma_{fin} =$ ' + f'{diffLen*100:.2f} [cm]')
+# ax.legend(fontsize=16)
+# fig.tight_layout()
+# fig.savefig(coreName + '_peaks.jpg')
+#
+#
+#     # Compute temperature estimate in [K]
+# depthT, dataT = inst.DeltaToTemp()
+#
+#     # Plot Temperature data in [C]
+# fig2, ax2 = plt.subplots(figsize=(10,7))
+# ax2.plot(depthT, dataT-273.15,color='k', lw=1)
+# ax2.set(xlabel = 'Depth [m]', ylabel = 'Temperature [C]', title=coreName)
+# fig2.savefig(coreName + '_Temp.jpg')
