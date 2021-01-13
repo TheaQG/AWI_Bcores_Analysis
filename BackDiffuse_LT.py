@@ -279,7 +279,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True):
+    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLen_In=0):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -302,7 +302,10 @@ class BackDiffuse():
 
         dInt, d18OInt, Delta = self.interpCores()
 
-        diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.01
+        if theoDiffLen:
+            diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.01
+        else:
+            diffLen0 = diffLen_In
         print(f'Starting sigma: {diffLen0*100:.2f} [cm]')
 
         decon_inst = SpectralDecon(dInt, d18OInt, N)
@@ -316,25 +319,40 @@ class BackDiffuse():
         data = dataD0
         diffLen = diffLen0
 
+        arr_diffLens = []
+        arr_Npeaks = []
 
         while N_peaks != self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
             idxPeak = signal.find_peaks(data, distance=3)[0]
             N_peaks = len(idxPeak)
+
+            arr_diffLens.append(diffLen)
+            arr_Npeaks.append(N_peaks)
+
             if print_Npeaks:
                 print(len(idxPeak))
+                print(diffLen)
 
             if N_peaks > self.ysInSec:
                 diffLen -= 0.0005
             if N_peaks < self.ysInSec:
                 diffLen += 0.0005
 
+            if diffLen >= 0.07:
+                break
+
         while N_peaks == self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
             idxPeak = signal.find_peaks(data, distance=3)[0]
             N_peaks = len(idxPeak)
+
+            arr_diffLens.append(diffLen)
+            arr_Npeaks.append(N_peaks)
+
             if print_Npeaks:
                 print(len(idxPeak))
+                print(diffLen)
             diffLen += 0.0001
 
         diffLen -= 0.0002
@@ -342,13 +360,16 @@ class BackDiffuse():
         idxPeak = signal.find_peaks(data, distance=3)[0]
         N_peaks = len(idxPeak)
 
+        arr_diffLens.append(diffLen)
+        arr_Npeaks.append(N_peaks)
+
         print(f'Final sigma: {diffLen*100:.2f} [cm]')
         print(f'Final # of peaks: {N_peaks}')
         depthEst = depth
         dataEst = data
         diffLenFin = diffLen
 
-        return depthEst, dataEst, diffLenFin, idxPeak
+        return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks
 
 #temp_holo = 213.15, delta_holo = -51, slope = 0.69
 
