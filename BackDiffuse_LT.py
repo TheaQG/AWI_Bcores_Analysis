@@ -151,7 +151,6 @@ class BackDiffuse():
             valMin = self.depthMin - pad
             valMax = self.depthMax + pad
 
-
         d = d_in[(d_in >= valMin) & (d_in <= valMax)]
         x = x_in[(d_in >= valMin) & (d_in <= valMax)]
 
@@ -160,7 +159,7 @@ class BackDiffuse():
 
         d_min = Delta * np.ceil(d.values[0]/Delta)
         d_max = Delta * np.floor(d.values[-1]/Delta)
-
+        
         n = int(1 + (d_max - d_min)/Delta)
 
         j_arr = np.linspace(0,n,n)
@@ -279,7 +278,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLen_In=0):
+    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.15):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -305,7 +304,7 @@ class BackDiffuse():
         if theoDiffLen:
             diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.01
         else:
-            diffLen0 = diffLen_In
+            diffLen0 = diffLenStart_In
         print(f'Starting sigma: {diffLen0*100:.2f} [cm]')
 
         decon_inst = SpectralDecon(dInt, d18OInt, N)
@@ -321,6 +320,8 @@ class BackDiffuse():
 
         arr_diffLens = []
         arr_Npeaks = []
+        arr_depth = []
+        arr_data = []
 
         while N_peaks != self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
@@ -329,6 +330,8 @@ class BackDiffuse():
 
             arr_diffLens.append(diffLen)
             arr_Npeaks.append(N_peaks)
+            arr_depth.append(depth)
+            arr_data.append(data)
 
             if print_Npeaks:
                 print(len(idxPeak))
@@ -339,7 +342,7 @@ class BackDiffuse():
             if N_peaks < self.ysInSec:
                 diffLen += 0.0005
 
-            if diffLen >= 0.07:
+            if diffLen >= diffLenEnd_In:
                 break
 
         while N_peaks == self.ysInSec:
@@ -349,6 +352,8 @@ class BackDiffuse():
 
             arr_diffLens.append(diffLen)
             arr_Npeaks.append(N_peaks)
+            arr_depth.append(depth)
+            arr_data.append(data)
 
             if print_Npeaks:
                 print(len(idxPeak))
@@ -362,6 +367,8 @@ class BackDiffuse():
 
         arr_diffLens.append(diffLen)
         arr_Npeaks.append(N_peaks)
+        arr_depth.append(depth)
+        arr_data.append(data)
 
         print(f'Final sigma: {diffLen*100:.2f} [cm]')
         print(f'Final # of peaks: {N_peaks}')
@@ -369,7 +376,7 @@ class BackDiffuse():
         dataEst = data
         diffLenFin = diffLen
 
-        return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks
+        return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
 #temp_holo = 213.15, delta_holo = -51, slope = 0.69
 
