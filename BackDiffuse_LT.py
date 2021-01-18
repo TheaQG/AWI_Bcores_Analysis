@@ -120,7 +120,7 @@ class BackDiffuse():
         return
 
 
-    def interpCores(self, pad = 1):
+    def interpCores(self, pad = 1, DeltaInput = False, DeltaIn = 0):
         '''
             Computes interpolation btw. depthMin-pad and depthMax+pad, or for whole core.
             Padding is added to avoid undesired border effects.
@@ -154,12 +154,15 @@ class BackDiffuse():
         d = d_in[(d_in >= valMin) & (d_in <= valMax)]
         x = x_in[(d_in >= valMin) & (d_in <= valMax)]
 
-        diff = np.diff(d)
-        Delta = round(min(diff), 3)
+        if DeltaInput:
+            Delta = DeltaIn
+        else:
+            diff = np.diff(d)
+            Delta = round(min(diff), 3)
 
         d_min = Delta * np.ceil(d.values[0]/Delta)
         d_max = Delta * np.floor(d.values[-1]/Delta)
-        
+
         n = int(1 + (d_max - d_min)/Delta)
 
         j_arr = np.linspace(0,n,n)
@@ -278,7 +281,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.15):
+    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, newDelta=0.01):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -322,58 +325,72 @@ class BackDiffuse():
         arr_Npeaks = []
         arr_depth = []
         arr_data = []
-
+        i = 0
         while N_peaks != self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
-            idxPeak = signal.find_peaks(data, distance=3)[0]
+            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+
+            idxPeak = signal.find_peaks(newData, distance=4)[0]
             N_peaks = len(idxPeak)
 
             arr_diffLens.append(diffLen)
             arr_Npeaks.append(N_peaks)
-            arr_depth.append(depth)
-            arr_data.append(data)
+            arr_depth.append(newDepth)
+            arr_data.append(newData)
 
             if print_Npeaks:
                 print(len(idxPeak))
                 print(diffLen)
 
             if N_peaks > self.ysInSec:
-                diffLen -= 0.0005
+                diffLen -= 0.0001
+                i += 1
+                if i%10 == 0:
+                    print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
             if N_peaks < self.ysInSec:
-                diffLen += 0.0005
+                diffLen += 0.0001005
+                i += 1
+                if i%10 == 0:
+                    print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
 
             if diffLen >= diffLenEnd_In:
                 break
 
         while N_peaks == self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
-            idxPeak = signal.find_peaks(data, distance=3)[0]
+            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+
+            idxPeak = signal.find_peaks(newData, distance=4)[0]
             N_peaks = len(idxPeak)
 
             arr_diffLens.append(diffLen)
             arr_Npeaks.append(N_peaks)
-            arr_depth.append(depth)
-            arr_data.append(data)
+            arr_depth.append(newDepth)
+            arr_data.append(newData)
 
             if print_Npeaks:
                 print(len(idxPeak))
                 print(diffLen)
             diffLen += 0.0001
+            i += 1
+            if i%10 == 0:
+                print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
 
         diffLen -= 0.0002
         depth, data = decon_inst.deconvolve(diffLen)
-        idxPeak = signal.find_peaks(data, distance=3)[0]
+        newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+        idxPeak = signal.find_peaks(newData, distance=4)[0]
         N_peaks = len(idxPeak)
 
         arr_diffLens.append(diffLen)
         arr_Npeaks.append(N_peaks)
-        arr_depth.append(depth)
-        arr_data.append(data)
+        arr_depth.append(newDepth)
+        arr_data.append(newData)
 
         print(f'Final sigma: {diffLen*100:.2f} [cm]')
         print(f'Final # of peaks: {N_peaks}')
-        depthEst = depth
-        dataEst = data
+        depthEst = newDepth
+        dataEst = newData
         diffLenFin = diffLen
 
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
@@ -431,6 +448,62 @@ class BackDiffuse():
 
 
 
+def interpCores2(valMin, valMax, d_In, x_In, pad = 1, DeltaInput = False, DeltaIn = 0, interpAll=True):
+    '''
+        Computes interpolation btw. depthMin-pad and depthMax+pad, or for whole core.
+        Padding is added to avoid undesired border effects.
+        Uses cubic spline interpolation with a new sample size equal to the
+        minimal sample size in the original data set.
+
+
+        Arguments:
+        ----------
+            pad:            [float] Padding to avoid werid borders. Default = 1 [m].
+
+        returns:
+        --------
+            dhat:           [array of floats] Depth data corresponding to interpolated data.
+            xhat:           [array of floats] d18O data corresponding to interpolated data.
+            Delta:          [float] New sample size.
+
+    '''
+
+    d_in = d_In
+    x_in = x_In
+
+
+    if interpAll:
+        valMin = d_in.min()
+        valmax = d_in.max()
+    else:
+        valMin = d_in.min - pad
+        valMax = d_in.max + pad
+
+    d = d_in[(d_in >= valMin) & (d_in <= valMax)]
+    x = x_in[(d_in >= valMin) & (d_in <= valMax)]
+
+    if DeltaInput:
+        Delta = DeltaIn
+    else:
+        diff = np.diff(d)
+        Delta = round(min(diff), 3)
+
+    d_min = Delta * np.ceil(d.values[0]/Delta)
+    d_max = Delta * np.floor(d.values[-1]/Delta)
+
+    n = int(1 + (d_max - d_min)/Delta)
+
+    j_arr = np.linspace(0,n,n)
+    dhat0 = d_min + (j_arr - 1)*Delta
+
+    f = interpolate.CubicSpline(d,x)
+
+    xhat0 = f(dhat0)
+
+    dhat = dhat0[(dhat0 >= d_min) & (dhat0 <= d_max)]
+    xhat = xhat0[(dhat0 >= d_min) & (dhat0 <= d_max)]
+
+    return dhat, xhat, Delta
 
 
 
