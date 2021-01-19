@@ -281,7 +281,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, newDelta=0.01):
+    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, newDelta=0.01, interpAfterDecon=True):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -328,7 +328,11 @@ class BackDiffuse():
         i = 0
         while N_peaks != self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
-            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+            if interpAfterDecon:
+                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+            else:
+                newDepth = depth
+                newData = data
 
             idxPeak = signal.find_peaks(newData, distance=4)[0]
             N_peaks = len(idxPeak)
@@ -345,12 +349,12 @@ class BackDiffuse():
             if N_peaks > self.ysInSec:
                 diffLen -= 0.0001
                 i += 1
-                if i%10 == 0:
+                if i%100 == 0:
                     print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
             if N_peaks < self.ysInSec:
                 diffLen += 0.0001005
                 i += 1
-                if i%10 == 0:
+                if i%100 == 0:
                     print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
 
             if diffLen >= diffLenEnd_In:
@@ -358,7 +362,12 @@ class BackDiffuse():
 
         while N_peaks == self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
-            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+
+            if interpAfterDecon:
+                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+            else:
+                newDepth = depth
+                newData = data
 
             idxPeak = signal.find_peaks(newData, distance=4)[0]
             N_peaks = len(idxPeak)
@@ -373,12 +382,17 @@ class BackDiffuse():
                 print(diffLen)
             diffLen += 0.0001
             i += 1
-            if i%10 == 0:
+            if i%100 == 0:
                 print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
 
         diffLen -= 0.0002
         depth, data = decon_inst.deconvolve(diffLen)
-        newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+        if interpAfterDecon:
+            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+        else:
+            newDepth = depth
+            newData = data
+
         idxPeak = signal.find_peaks(newData, distance=4)[0]
         N_peaks = len(idxPeak)
 
