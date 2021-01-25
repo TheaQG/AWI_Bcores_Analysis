@@ -1,7 +1,24 @@
 from scipy import interpolate
 import numpy as np
 def interpCores(valMin, valMax, d_in, x_in, DeltaInput = False, DeltaIn = 0):
+    '''
 
+
+        Arguments:
+        ----------
+            valMin:     []
+            valMax:     []
+            d_in:       []
+            x_in:       []
+            DeltaInput: [] = False
+            DeltaIn:    [] = 0
+
+        returns:
+        --------
+            dhat:       []
+            xhat:       []
+            Delta:       []
+    '''
 
     d = d_in[(d_in >= valMin) & (d_in <= valMax)]
     x = x_in[(d_in >= valMin) & (d_in <= valMax)]

@@ -6,6 +6,25 @@ from pandas import ExcelWriter
 
 
 def GetCoreData(site_in):
+    '''
+
+
+        Arguments:
+        ----------
+            site_in:            []
+
+        returns:
+        --------
+            data_d18O:          []
+            data_d18O_LT:       []
+            data_ECM:           []
+            data_ECM_LT:        []
+            data_dens:          []
+            data_dens_LT:       []
+            data_diff:          []
+            data_diff_LT:       []
+
+    '''
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
     coreNames = CoresSpecs['CoreName']
     site = site_in
