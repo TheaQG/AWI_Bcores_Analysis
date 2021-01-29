@@ -19,6 +19,12 @@ from scipy import signal
 
 from Decon import SpectralDecon
 
+'''
+        *********** TODO************
+
+        - Make sure that final diff len corresponds to 32 peaks!
+        - If diff len < 0, then don't continue!!!
+'''
 
 class BackDiffuse():
     '''
@@ -334,7 +340,7 @@ class BackDiffuse():
                 newDepth = depth
                 newData = data
 
-            idxPeak = signal.find_peaks(newData, distance=4)[0]
+            idxPeak = signal.find_peaks(newData)[0]
             N_peaks = len(idxPeak)
 
             arr_diffLens.append(diffLen)
@@ -403,6 +409,8 @@ class BackDiffuse():
 
         print(f'Final sigma: {diffLen*100:.2f} [cm]')
         print(f'Final # of peaks: {N_peaks}')
+        print(f'Delta: {depth[1]-depth[0]:.3f}')
+        print(f'Delta new: {newDepth[1]-newDepth[0]:.3f}')
         depthEst = newDepth
         dataEst = newData
         diffLenFin = diffLen

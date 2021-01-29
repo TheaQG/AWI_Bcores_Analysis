@@ -3,28 +3,41 @@ import os
 import pandas as pd
 from pandas import ExcelWriter
 
+'''
+        *********** TODO************
 
+        - (26/01/21) Fix function to return corespecs of specific core as well as all data.
+'''
 
 def GetCoreData(site_in):
     '''
-
+        Function to locate data files of given core and construct dataframes consisting
+        of all data of interest: isotopes, ECM, denisty and diffusion length.
+        If no file with data exists, an empty dataframe is produced instead.
+        Consideres both files with measured density data and files with only modelled
+        density data.
 
         Arguments:
         ----------
-            site_in:            []
+            site_in:            [str] Name of core drilling site.
 
         returns:
         --------
-            data_d18O:          []
-            data_d18O_LT:       []
-            data_ECM:           []
-            data_ECM_LT:        []
-            data_dens:          []
-            data_dens_LT:       []
-            data_diff:          []
-            data_diff_LT:       []
+            data_d18O:          [pd.DataFrame]  Measured isotope data of full core, 'depth', 'd18O'
+            data_d18O_LT:       [pd.DataFrame]  Measured isotope data of LT section, 'depth', 'd18O'
+            data_ECM:           [pd.DataFrame]  Measured ECM data of full core, 'depth', 'ECM'
+            data_ECM_LT:        [pd.DataFrame]  Measured ECM data of LT section, 'depth', 'ECM'
+            data_dens:          [pd.DataFrame]  Measured density data of full core, 'depth',
+                                                ('rhoMeas'), 'HLmodel', ('HLmodelOpti').
+            data_dens_LT:       [pd.DataFrame]  Measured density data of LT section, 'depth',
+                                                ('rhoMeas'), 'HLmodel', ('HLmodelOpti').
+            data_diff:          [pd.DataFrame]  Measured diffusion data of full core, 'Depth', 'sigma_D',
+                                                'sigma_o18', 'sigma_o17'
+            data_diff_LT:       [pd.DataFrame]  Measured diffusion data of LT section, 'Depth', 'sigma_D',
+                                                'sigma_o18', 'sigma_o17'
 
     '''
+
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
     coreNames = CoresSpecs['CoreName']
     site = site_in
@@ -39,7 +52,7 @@ def GetCoreData(site_in):
     dens0 = CoreSpecs['dens0']
     z0 = CoreSpecs['z0']
 
-
+        # Load isotope data. If no file to be found, create empty data frame.
     try:
         site_d18O =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+ site + '_det.txt', ',')
     except:
@@ -47,6 +60,8 @@ def GetCoreData(site_in):
         site_d18O = pd.DataFrame(index=np.arange(0,1000),columns=['depth','d18O'])
         site_d18O = site_d18O.fillna(0)
 
+
+        # Load ECM data. If no file to be found, create empty data frame.
     try:
         site_ECM = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetECM/'+ site + '_ECM.txt', ',')
     except:
@@ -54,6 +69,8 @@ def GetCoreData(site_in):
         site_ECM = pd.DataFrame(index=np.arange(0,1000),columns=['depth','ECM'])
         site_ECM = site_ECM.fillna(0)
 
+
+        # Load density data. If no file to be found, create empty data frame.
     try:
             site_Dens = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/'+ site + 'DepthDens_w_Models.txt', '\t')
     except:
@@ -61,6 +78,8 @@ def GetCoreData(site_in):
         site_Dens = pd.DataFrame(index=np.arange(0,1000),columns=['depth', 'dens', 'rhoMeas', 'HLmodel', 'HLmodelOpti'])
         site_Dens = site_Dens.fillna(0)
 
+
+        # Load diffusion length data. If no file to be found, create empty data frame.
     try:
         site_Diff = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/'+ site + '_DepthDiff.txt', '\t')
     except:
@@ -86,7 +105,8 @@ def GetCoreData(site_in):
     data_ECM = pd.DataFrame(data = {'depth': depthECM, 'ECM': ECM})
     data_ECM_LT = pd.DataFrame(data = {'depth': depthECM_LT, 'ECM': ECM_LT})
 
-        # Define density measurements: raw, model and fudged model. Define btw. Laki and Tamb.
+        # Define density measurements: raw, model and fudged model. Check the length
+        # of density - use only modelled, if only two columns. Define btw. Laki and Tamb.
     if len(site_Dens.columns) == 2:
         depthRho = site_Dens['depth']
         HLmodel = site_Dens['HLmodel']
@@ -124,6 +144,4 @@ def GetCoreData(site_in):
     data_diff_LT = pd.DataFrame(data = {'Depth': depthDiff_LT, 'sigma_D': sigma_D_LT,
                                      'sigma_o18': sigma_o18_LT, 'sigma_o17': sigma_o17_LT})
 
-#    df = pd.DataFrame(data={'d18O': data_d18O, 'd18O_LT': data_d18O_LT, 'ECM': data_ECM, 'ECM_LT': data_ECM_LT,
-#                            'dens': data_dens, 'dens_LT': data_dens_LT, 'diff': data_diff, 'diff_LT': data_diff_LT})
     return  data_d18O, data_d18O_LT, data_ECM, data_ECM_LT, data_dens, data_dens_LT, data_diff, data_diff_LT
