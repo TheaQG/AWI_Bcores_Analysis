@@ -40,6 +40,47 @@ from Interpolation_Class import Interpolation
 
 
 
+def getInterpBFdata(site_in, delta_arr_in):
+    site = site_in
+
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+    dTamb = CoreSpecs['dTamb']
+    dLaki = CoreSpecs['dLaki']
+
+
+    DataAll = GetCoreData(site)
+
+    data_d18O = DataAll[0]; data_d18O_LT = DataAll[1]
+    data_ECM = DataAll[2]; data_ECM_LT = DataAll[3]
+    data_dens = DataAll[4]; data_dens_LT = DataAll[5]
+    data_diff = DataAll[6]; data_diff_LT = DataAll[7]
+
+
+    depth_LT = data_d18O_LT['depth']
+    d18O_LT = data_d18O_LT['d18O']
+
+    delta_arr = delta_arr_in
+    diffLens = []
+    depths = []
+    datas = []
+    peakss = []
+
+
+    inst = BackDiffuse(site, data_d18O_LT, CoresSpecs, dTamb, dLaki, 32, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
+
+    for i in range(len(delta_arr)):
+
+        print(f'\n\t\tRun {i} of {len(delta_arr)}')
+        depth1, data, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True, newDelta=delta_arr[i])
+        depths.append(depth1)
+        datas.append(data)
+        diffLens.append(diffLen)
+
+    df_Site = pd.DataFrame({'diffLens':diffLens, 'deltas':delta_arr})
+
+    df_Site.to_csv('../Data/'+site+'_DiffLensVdelta_InterpAF.txt',sep='\t', index=False)
+    return
 
 def getInterpAFdata(site_in, delta_arr_in):
     site = site_in
