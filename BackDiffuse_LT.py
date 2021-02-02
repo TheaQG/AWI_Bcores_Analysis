@@ -24,6 +24,7 @@ from Decon import SpectralDecon
 
         - Make sure that final diff len corresponds to 32 peaks!
         - If diff len < 0, then don't continue!!!
+        - How to get peaks not to be directly close to each other? Needs a cycle understanding?
 '''
 
 class BackDiffuse():
@@ -71,7 +72,7 @@ class BackDiffuse():
                     on the measured delta values and a slope, a holocene temperature
                     estimate and a holocene delta estimate.
     '''
-    def __init__(self, coreName, d18OData, coreSpecs, depthMin, depthMax, ysInSec, interpAll = False, diffDensData_in = True, diffLenData = None, densData = None):
+    def __init__(self, coreName, d18OData, coreSpecs, depthMin, depthMax, ysInSec, interpAll = False, diffDensData_in = True, diffLenData = None, densData = None, Dist=3):
         '''
             Initialize the class instance.
 
@@ -103,7 +104,7 @@ class BackDiffuse():
         self.ysInSec = ysInSec
         self.interpAll = interpAll
         self.diffDensData_in = diffDensData_in
-
+        self.Dist = Dist
         self.densData = densData
         self.diffLenData = diffLenData
 
@@ -336,11 +337,22 @@ class BackDiffuse():
             depth, data = decon_inst.deconvolve(diffLen)
             if interpAfterDecon:
                 newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+                ave_Npoints = ave_dist/(newDepth[-1] - newDepth[0])
+                min_peakDist = int(ave_Npoints/self.Dist)
+
             else:
                 newDepth = depth
                 newData = data
+                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+                ave_Npoints = ave_dist/(newDepth[-1] - newDepth[0])
+                min_peakDist = int(ave_Npoints/self.Dist)
 
-            idxPeak = signal.find_peaks(newData)[0]
+            if min_peakDist==0:
+                idxPeak = signal.find_peaks(newData)[0]
+            else:
+                idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+
             N_peaks = len(idxPeak)
 
             arr_diffLens.append(diffLen)
@@ -371,11 +383,22 @@ class BackDiffuse():
 
             if interpAfterDecon:
                 newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+                ave_Npoints = ave_dist/newDelta
+                min_peakDist = int(ave_Npoints/self.Dist)
             else:
                 newDepth = depth
                 newData = data
+                Delta = depth[1]-depth[0]
+                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+                ave_Npoints = ave_dist/Delta
+                min_peakDist = int(ave_Npoints/self.Dist)
 
-            idxPeak = signal.find_peaks(newData, distance=4)[0]
+            if min_peakDist==0:
+                idxPeak = signal.find_peaks(newData)[0]
+            else:
+                idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+
             N_peaks = len(idxPeak)
 
             arr_diffLens.append(diffLen)
@@ -395,11 +418,22 @@ class BackDiffuse():
         depth, data = decon_inst.deconvolve(diffLen)
         if interpAfterDecon:
             newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+            ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+            ave_Npoints = ave_dist/newDelta
+            min_peakDist = int(ave_Npoints/self.Dist)
         else:
             newDepth = depth
             newData = data
+            Delta = newDepth[1] - newDepth[0]
+            ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+            ave_Npoints = ave_dist/Delta
+            min_peakDist = int(ave_Npoints/self.Dist)
 
-        idxPeak = signal.find_peaks(newData, distance=4)[0]
+        if min_peakDist==0:
+            idxPeak = signal.find_peaks(newData)[0]
+        else:
+            idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+
         N_peaks = len(idxPeak)
 
         arr_diffLens.append(diffLen)
@@ -417,6 +451,74 @@ class BackDiffuse():
 
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
+
+    def BackDiffuse_Theo(self, N=2000, newDelta=0.01, interpAfterDecon=True):
+        '''
+
+
+            Arguments:
+            ----------
+
+            returns:
+            --------
+
+        '''
+        sigma_rangeHL = self.diffLenEstimateHL()
+        sigma_FitEst = self.spectralEstimate()
+        diffLenTheo0 = sigma_rangeHL[0]
+        diffLenTheo1 = sigma_rangeHL[1]
+
+        dInt, d18OInt, Delta = self.interpCores()
+
+        print(f'Theo. sigma Min: {sigma_rangeHL[0]*100:.2f} [cm]')
+        print(f'Theo. sigma Max: {sigma_rangeHL[1]*100:.2f} [cm]')
+
+        decon_inst = SpectralDecon(dInt, d18OInt, N)
+
+        depth0, dataD0 = decon_inst.deconvolve(diffLenTheo0)
+        depth1, dataD1 = decon_inst.deconvolve(diffLenTheo1)
+
+        if interpAfterDecon:
+            newDepth0, newData0, _ = interpCores2(depth0[0], depth0[-1], pd.Series(depth0), pd.Series(dataD0), DeltaInput=True, DeltaIn=newDelta)
+            ave_dist0 = (newDepth0[-1] - newDepth0[0])/self.ysInSec
+            ave_Npoints0 = ave_dist/newDelta
+            min_peakDist0 = int(ave_Npoints0/self.Dist)
+
+            newDepth1, newData1, _ = interpCores2(depth1[0], depth1[-1], pd.Series(depth1), pd.Series(dataD1), DeltaInput=True, DeltaIn=newDelta)
+            ave_dist1 = (newDepth1[-1] - newDepth1[0])/self.ysInSec
+            ave_Npoints1 = ave_dist1/newDelta
+            min_peakDist1 = int(ave_Npoints1/self.Dist)
+
+        else:
+            newDepth0 = depth0; newData0 = dataD0
+            ave_dist0 = (newDepth0[-1] - newDepth0[0])/self.ysInSec
+            ave_Npoints0 = ave_dist0/newDelta0
+            min_peakDist0 = int(ave_Npoints0/self.Dist)
+
+            newDepth1 = depth1; newData1 = dataD1
+            ave_dist1 = (newDepth1[-1] - newDepth1[0])/self.ysInSec
+            ave_Npoints1 = ave_dist1/newDelta
+            min_peakDist1 = int(ave_Npoints1/self.Dist)
+
+        from scipy import signal
+
+        if min_peakDist0==0:
+            idxPeak0 = signal.find_peaks(newData0)[0]
+        else:
+            idxPeak0 = signal.find_peaks(newData0, distance=min_peakDist0)[0]
+
+        if min_peakDist1==0:
+            idxPeak1 = signal.find_peaks(newData1)[0]
+        else:
+            idxPeak1 = signal.find_peaks(newData1, distance=min_peakDist1)[0]
+
+        N_peaks0 = len(idxPeak0)
+        N_peaks1 = len(idxPeak1)
+
+        allData_TheoMin = pd.DataFrame({'depth': newDepth0, 'd18O': newData0})#, 'idxPeaks': idxPeak0, 'Npeaks': N_peaks0})
+        allData_TheoMax = pd.DataFrame({'depth': newDepth1, 'd18O': newData1})#, 'idxPeaks': idxPeak1, 'Npeaks': N_peaks1})
+
+        return allData_TheoMin, idxPeak0, N_peaks0, allData_TheoMax, idxPeak1, N_peaks1
 #temp_holo = 213.15, delta_holo = -51, slope = 0.69
 
     def DeltaToTemp(self, temp_holo = 213.15, delta_holo = -51, slope = 0.69):
