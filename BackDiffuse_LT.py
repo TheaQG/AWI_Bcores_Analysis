@@ -481,7 +481,7 @@ class BackDiffuse():
         if interpAfterDecon:
             newDepth0, newData0, _ = interpCores2(depth0[0], depth0[-1], pd.Series(depth0), pd.Series(dataD0), DeltaInput=True, DeltaIn=newDelta)
             ave_dist0 = (newDepth0[-1] - newDepth0[0])/self.ysInSec
-            ave_Npoints0 = ave_dist/newDelta
+            ave_Npoints0 = ave_dist0/newDelta
             min_peakDist0 = int(ave_Npoints0/self.Dist)
 
             newDepth1, newData1, _ = interpCores2(depth1[0], depth1[-1], pd.Series(depth1), pd.Series(dataD1), DeltaInput=True, DeltaIn=newDelta)

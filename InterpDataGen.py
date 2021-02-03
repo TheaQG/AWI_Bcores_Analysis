@@ -40,7 +40,7 @@ from Interpolation_Class import Interpolation
 
 
 
-def getInterpBFdata(site_in, delta_arr_in):
+def getInterpBFdata(site_in, delta_arr_in, yrsInSec=32, interpType='CubicSpline'):
     site = site_in
 
     core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
@@ -61,28 +61,48 @@ def getInterpBFdata(site_in, delta_arr_in):
     d18O_LT = data_d18O_LT['d18O']
 
     delta_arr = delta_arr_in
-    diffLens = []
-    depths = []
-    datas = []
-    peakss = []
 
+    interval = np.array([min(depth_LT), max(depth_LT)])
+    interpTypeAll = interpType
 
-    inst = BackDiffuse(site, data_d18O_LT, CoresSpecs, dTamb, dLaki, 32, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
+    diffLens = np.zeros(len(delta_arr))
+    Npeaks = np.zeros(len(delta_arr))
+    depths_BD = []
+    datas_BD = []
+#    depth_ints = []
+#    data_ints = []
 
     for i in range(len(delta_arr)):
+        print(f'\nRun {i}')
+        print(f'Delta: {delta_arr[i]:.3f}\n')
+        inst = Interpolation(depth_LT, pd.Series(d18O_LT), interval, interpTypeAll, DeltaInput=True, samplingSize=delta_arr[i])
+        depth_LT_int1, d18O_LT_int1, Delta = inst()
 
-        print(f'\n\t\tRun {i} of {len(delta_arr)}')
-        depth1, data, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True, newDelta=delta_arr[i])
-        depths.append(depth1)
-        datas.append(data)
-        diffLens.append(diffLen)
+#        depth_ints.append(depth_LT_int1)
+#        data_ints.append(d18O_LT_int1)
+
+        dataAll = pd.DataFrame({'depth':depth_LT_int1,'d18O':d18O_LT_int1}, index=None)
+
+        inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, yrsInSec, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
+        diffLen = inst.spectralEstimate()
+        difflenEstHL = inst.diffLenEstimateHL()
+        depth1, data, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=False, newDelta=0.005)
+
+        Npeaks[i] = len(peaks)
+        diffLens[i] = diffLen
+        depths_BD.append(depth1)
+        datas_BD.append(data)
 
     df_Site = pd.DataFrame({'diffLens':diffLens, 'deltas':delta_arr})
 
-    df_Site.to_csv('../Data/'+site+'_DiffLensVdelta_InterpAF.txt',sep='\t', index=False)
+    df_Site.to_csv('../Data/'+site+'_DiffLensVdelta_InterpBF.txt',sep='\t', index=False)
+
     return
 
-def getInterpAFdata(site_in, delta_arr_in):
+
+
+
+def getInterpAFdata(site_in, delta_arr_in, yrsInSec=32):
     site = site_in
 
     core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
@@ -104,19 +124,19 @@ def getInterpAFdata(site_in, delta_arr_in):
 
     delta_arr = delta_arr_in
     diffLens = []
-    depths = []
-    datas = []
-    peakss = []
+#    depths = []
+#    datas = []
+#    peakss = []
 
 
-    inst = BackDiffuse(site, data_d18O_LT, CoresSpecs, dTamb, dLaki, 32, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
+    inst = BackDiffuse(site, data_d18O_LT, CoresSpecs, dTamb, dLaki, yrsInSec, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
 
     for i in range(len(delta_arr)):
 
         print(f'\n\t\tRun {i} of {len(delta_arr)}')
         depth1, data, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True, newDelta=delta_arr[i])
-        depths.append(depth1)
-        datas.append(data)
+#        depths.append(depth1)
+#        datas.append(data)
         diffLens.append(diffLen)
 
     df_Site = pd.DataFrame({'diffLens':diffLens, 'deltas':delta_arr})
@@ -131,11 +151,16 @@ CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpec
 
 coreNames = CoresSpecs['CoreName']
 
-sites = ['Crete', 'SiteA', 'SiteB', 'SiteE', 'SiteG']
-delta_arr = np.arange(0.004,0.075,0.0005)
+sites = ['SiteB', 'SiteE', 'SiteG']#['Crete', 'SiteA',
+deltaMins = [0.01,0.01,0.01]#[0.02,0.022,
+deltaMaxs = [0.14,0.12,0.11]#[0.13,0.12,
+yrs = [33,32,32]#[32,32,
 
-for site in sites:
+i = 0
+for i in range(1,len(sites)):
     print('\n\n\n###############')
-    print('#### ' + site + ' ####')
+    print('#### ' + sites[i] + ' ####')
     print('###############')
-    getInterpAFdata(site_in=site, delta_arr_in=delta_arr)
+    delta_arr = np.linspace(deltaMins[i],deltaMaxs[i],100)
+    getInterpBFdata(site_in=sites[i], delta_arr_in=delta_arr,yrsInSec=yrs[i])
+    i += 1
