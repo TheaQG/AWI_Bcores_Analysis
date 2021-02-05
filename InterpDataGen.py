@@ -83,7 +83,7 @@ def getInterpBFdata(site_in, delta_arr_in, yrsInSec=32, interpType='CubicSpline'
 
         dataAll = pd.DataFrame({'depth':depth_LT_int1,'d18O':d18O_LT_int1}, index=None)
 
-        inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, yrsInSec, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
+        inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, yrsInSec, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=2)
         diffLen = inst.spectralEstimate()
         difflenEstHL = inst.diffLenEstimateHL()
         depth1, data, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=False, newDelta=0.005)
@@ -151,13 +151,13 @@ CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpec
 
 coreNames = CoresSpecs['CoreName']
 
-sites = ['SiteB', 'SiteE', 'SiteG']#['Crete', 'SiteA',
-deltaMins = [0.01,0.01,0.01]#[0.02,0.022,
-deltaMaxs = [0.14,0.12,0.11]#[0.13,0.12,
-yrs = [33,32,32]#[32,32,
+sites = ['SiteB']#, 'SiteE', 'SiteG']#['Crete', 'SiteA',
+deltaMins = [0.01]#,0.02,0.02]#[0.02,0.022,
+deltaMaxs = [0.14]#,0.12,0.11]#[0.13,0.12,
+yrs = [33]#,32,32]#[32,32,
 
 i = 0
-for i in range(1,len(sites)):
+for i in range(0,len(sites)):
     print('\n\n\n###############')
     print('#### ' + sites[i] + ' ####')
     print('###############')

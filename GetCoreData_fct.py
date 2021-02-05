@@ -9,7 +9,7 @@ from pandas import ExcelWriter
         - (26/01/21) Fix function to return corespecs of specific core as well as all data.
 '''
 
-def GetCoreData(site_in):
+def GetCoreData(site_in, type_in='Alphabet'):
     '''
         Function to locate data files of given core and construct dataframes consisting
         of all data of interest: isotopes, ECM, denisty and diffusion length.
@@ -54,7 +54,10 @@ def GetCoreData(site_in):
 
         # Load isotope data. If no file to be found, create empty data frame.
     try:
-        site_d18O =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+ site + '_det.txt', ',')
+        if type_in == 'Alphabet':
+            site_d18O =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+ site + '_det.txt', ',')
+        elif type_in == 'AWI_Bcores':
+            site_d18O =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/B_cores_AWI/Bcoresd18O/Depth_d18O__'+ site + '.txt', '\t')
     except:
         print('No d18O file found, setting empty df instead')
         site_d18O = pd.DataFrame(index=np.arange(0,1000),columns=['depth','d18O'])
@@ -63,7 +66,10 @@ def GetCoreData(site_in):
 
         # Load ECM data. If no file to be found, create empty data frame.
     try:
-        site_ECM = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetECM/'+ site + '_ECM.txt', ',')
+        if type_in == 'Alphabet':
+            site_ECM = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetECM/'+ site + '_ECM.txt', ',')
+        elif type_in == 'AWI_Bcores':
+            site_ECM =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/B_cores_AWI/BcoresECMDEP/'+ site + '_ECM.txt', '\t')
     except:
         print('No ECM file found, setting empty df instead')
         site_ECM = pd.DataFrame(index=np.arange(0,1000),columns=['depth','ECM'])
@@ -72,7 +78,11 @@ def GetCoreData(site_in):
 
         # Load density data. If no file to be found, create empty data frame.
     try:
+        if type_in == 'Alphabet':
             site_Dens = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/'+ site + 'DepthDens_w_Models.txt', '\t')
+        elif type_in == 'AWI_Bcores':
+            site_Dens =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/B_cores_AWI/BcoresDens/'+ site + 'DepthDens_w_Models.txt', '\t')
+
     except:
         print('No density file found, setting empty df instead')
         site_Dens = pd.DataFrame(index=np.arange(0,1000),columns=['depth', 'dens', 'rhoMeas', 'HLmodel', 'HLmodelOpti'])
@@ -81,7 +91,10 @@ def GetCoreData(site_in):
 
         # Load diffusion length data. If no file to be found, create empty data frame.
     try:
-        site_Diff = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/'+ site + '_DepthDiff.txt', '\t')
+        if type_in == 'Alphabet':
+            site_Diff = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/'+ site + '_DepthDiff.txt', '\t')
+        elif type_in == 'AWI_Bcores':
+            site_Diff =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/B_cores_AWI/BcoresDiff/'+ site + '_DepthDiff.txt', '\t')
     except:
         print('No diffusion file found, setting empty df instead')
         site_Diff = pd.DataFrame(index=np.arange(0,1000),columns=['Depth','Density', 'sigma_D', 'sigma_o18', 'sigma_o17'])

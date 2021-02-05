@@ -288,7 +288,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, newDelta=0.01, interpAfterDecon=True):
+    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -336,9 +336,13 @@ class BackDiffuse():
         while N_peaks != self.ysInSec:
             depth, data = decon_inst.deconvolve(diffLen)
             if interpAfterDecon:
-                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+                if newDelta == 0:
+                    newDeltaUse = (depth[1] - depth[0])/2
+                else:
+                    newDeltaUse = newDelta
+                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
                 ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-                ave_Npoints = ave_dist/(newDepth[-1] - newDepth[0])
+                ave_Npoints = ave_dist/newDeltaUse
                 min_peakDist = int(ave_Npoints/self.Dist)
 
             else:
@@ -382,9 +386,13 @@ class BackDiffuse():
             depth, data = decon_inst.deconvolve(diffLen)
 
             if interpAfterDecon:
-                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+                if newDelta == 0:
+                    newDeltaUse = (depth[1] - depth[0])/2
+                else:
+                    newDeltaUse = newDelta
+                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
                 ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-                ave_Npoints = ave_dist/newDelta
+                ave_Npoints = ave_dist/newDeltaUse
                 min_peakDist = int(ave_Npoints/self.Dist)
             else:
                 newDepth = depth
@@ -417,9 +425,13 @@ class BackDiffuse():
         diffLen -= 0.0002
         depth, data = decon_inst.deconvolve(diffLen)
         if interpAfterDecon:
-            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDelta)
+            if newDelta == 0:
+                newDeltaUse = (depth[1] - depth[0])/2
+            else:
+                newDeltaUse = newDelta
+            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
             ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-            ave_Npoints = ave_dist/newDelta
+            ave_Npoints = ave_dist/newDeltaUse
             min_peakDist = int(ave_Npoints/self.Dist)
         else:
             newDepth = depth
@@ -479,14 +491,18 @@ class BackDiffuse():
         depth1, dataD1 = decon_inst.deconvolve(diffLenTheo1)
 
         if interpAfterDecon:
-            newDepth0, newData0, _ = interpCores2(depth0[0], depth0[-1], pd.Series(depth0), pd.Series(dataD0), DeltaInput=True, DeltaIn=newDelta)
+            if newDelta == 0:
+                newDeltaUse = (depth[1] - depth[0])/2
+            else:
+                newDeltaUse = newDelta
+            newDepth0, newData0, _ = interpCores2(depth0[0], depth0[-1], pd.Series(depth0), pd.Series(dataD0), DeltaInput=True, DeltaIn=newDeltaUse)
             ave_dist0 = (newDepth0[-1] - newDepth0[0])/self.ysInSec
-            ave_Npoints0 = ave_dist0/newDelta
+            ave_Npoints0 = ave_dist0/newDeltaUse
             min_peakDist0 = int(ave_Npoints0/self.Dist)
 
-            newDepth1, newData1, _ = interpCores2(depth1[0], depth1[-1], pd.Series(depth1), pd.Series(dataD1), DeltaInput=True, DeltaIn=newDelta)
+            newDepth1, newData1, _ = interpCores2(depth1[0], depth1[-1], pd.Series(depth1), pd.Series(dataD1), DeltaInput=True, DeltaIn=newDeltaUse)
             ave_dist1 = (newDepth1[-1] - newDepth1[0])/self.ysInSec
-            ave_Npoints1 = ave_dist1/newDelta
+            ave_Npoints1 = ave_dist1/newDeltaUse
             min_peakDist1 = int(ave_Npoints1/self.Dist)
 
         else:

@@ -411,7 +411,7 @@ class HL_Thea():
         f0 = p[0]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
         hIn = self.z_meas[0]
-        print(k0)
+        
         rho_surf = self.rho_I / (((self.rho_I - self.rho_0)/(self.rho_0)) * np.exp(hIn*self.rho_I*k0) + 1)
         return rho_surf
 
