@@ -26,7 +26,7 @@ from Interpolation_Class import Interpolation
 
 
 '''
-        Function to test diff len vs. interp. delta AFTER signal analysis and
+        Function to test diff len vs. interp. delta after and before signal analysis and
         deconvolution.
 
 
@@ -37,11 +37,65 @@ from Interpolation_Class import Interpolation
 '''
 
 
+def getDiffLen_V_Npeaks(site_in, diffLen_start, diffLen_end, yrsInSec=32, max_Npeaks = 500, interpType='CubicSpline'):
+    site = site_in
 
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    coreNames = CoresSpecs['CoreName']
+
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+    dTamb = CoreSpecs['dTamb']
+    dLaki = CoreSpecs['dLaki']
+
+
+    DataAll = GetCoreData(site)
+
+    data_d18O = DataAll[0]; data_d18O_LT = DataAll[1]
+    data_ECM = DataAll[2]; data_ECM_LT = DataAll[3]
+    data_dens = DataAll[4]; data_dens_LT = DataAll[5]
+    data_diff = DataAll[6]; data_diff_LT = DataAll[7]
+
+
+    depth_LT = data_d18O_LT['depth']
+    d18O_LT = data_d18O_LT['d18O']
+
+    interval = np.array([min(depth_LT), max(depth_LT)])
+    interpTypeAll = interpType
+
+    inst = Interpolation(depth_LT, pd.Series(d18O_LT), interval, interpTypeAll)
+    depth_LT_int1, d18O_LT_int1, Delta = inst()
+
+
+    dataAll = pd.DataFrame({'depth':depth_LT_int1,'d18O':d18O_LT_int1}, index=None)
+
+    inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, ysInSec=500, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
+
+    diffLen = inst.spectralEstimate()
+    difflenEstHL = inst.diffLenEstimateHL()
+    _,_,_,_, arr_DiffLens, arr_Npeaks, _,_ = inst.backDiffused(theoDiffLen=False,print_Npeaks=False, diffLenStart_In=diffLen_start, diffLenEnd_In=diffLen_end)
+
+    idx = np.where(np.asarray(arr_Npeaks) <= yrsInSec)[0]
+    Npeaks_upTo32 = np.asarray(arr_Npeaks)[idx]
+    DiffLens_upTo32 = np.asarray(arr_DiffLens)[idx]
+
+
+    df_Site = pd.DataFrame({'diffLen':arr_DiffLens, 'Npeaks':arr_Npeaks})
+    df_Site_upTo32 = pd.DataFrame({'diffLen_upTo32':DiffLens_upTo32,'Npeaks_upTo32':Npeaks_upTo32})
+
+    df_Site.to_csv('../Data/'+site+'_DiffLensVpeaks.txt',sep='\t', index=False)
+    df_Site_upTo32.to_csv('../Data/'+site+'_DiffLensVpeaks_upTo32.txt',sep='\t', index=False)
+
+    return
 
 
 def getInterpBFdata(site_in, delta_arr_in, yrsInSec=32, interpType='CubicSpline'):
     site = site_in
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    coreNames = CoresSpecs['CoreName']
 
     core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
     CoreSpecs = CoresSpecs.iloc[core_idx]
@@ -105,6 +159,10 @@ def getInterpBFdata(site_in, delta_arr_in, yrsInSec=32, interpType='CubicSpline'
 def getInterpAFdata(site_in, delta_arr_in, yrsInSec=32):
     site = site_in
 
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    coreNames = CoresSpecs['CoreName']
+
     core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
     CoreSpecs = CoresSpecs.iloc[core_idx]
     dTamb = CoreSpecs['dTamb']
@@ -144,23 +202,52 @@ def getInterpAFdata(site_in, delta_arr_in, yrsInSec=32):
     df_Site.to_csv('../Data/'+site+'_DiffLensVdelta_InterpAF.txt',sep='\t', index=False)
     return
 
+'''
+    Generate data for diff. len. V. N peaks.
+'''
+# sites = ['Crete', 'SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+# for i in range(len(sites)):
+#     print('\nSite: ' + sites[i] + '\n')
+#     getDiffLen_V_Npeaks(site_in=sites[i], diffLen_start=0.005, diffLen_end=0.15)
+
+
+'''
+    Generation of data with interpolation AFTER deconvolution (SAVE AND USE)
+'''
+# CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+#
+# coreNames = CoresSpecs['CoreName']
+#
+# sites = ['SiteA', 'SiteB', 'SiteE', 'SiteG']
+# delta_arr = np.arange(0.01,0.075,0.0005)
+#
+# for site in sites:
+#     print('\n\n\n###############')
+#     print('#### ' + site + ' ####')
+#     print('###############')
+#     getInterpAFdata(site_in=site, delta_arr_in=delta_arr)
 
 
 
-CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
-coreNames = CoresSpecs['CoreName']
 
-sites = ['SiteB']#, 'SiteE', 'SiteG']#['Crete', 'SiteA',
-deltaMins = [0.01]#,0.02,0.02]#[0.02,0.022,
-deltaMaxs = [0.14]#,0.12,0.11]#[0.13,0.12,
-yrs = [33]#,32,32]#[32,32,
-
-i = 0
-for i in range(0,len(sites)):
-    print('\n\n\n###############')
-    print('#### ' + sites[i] + ' ####')
-    print('###############')
-    delta_arr = np.linspace(deltaMins[i],deltaMaxs[i],100)
-    getInterpBFdata(site_in=sites[i], delta_arr_in=delta_arr,yrsInSec=yrs[i])
-    i += 1
+'''
+    Interpolation BEFORE deconvolution (DO NOT USE)
+'''
+# CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+#
+# coreNames = CoresSpecs['CoreName']
+#
+# sites = ['Crete', 'SiteA','SiteB', 'SiteE', 'SiteG']
+# deltaMins = [0.02,0.022,0.01,0.02,0.02]
+# deltaMaxs = [0.13,0.12,0.14,0.12,0.11]
+# yrs = [32,32,33,32,32]
+#
+# i = 0
+# for i in range(0,len(sites)):
+#     print('\n\n\n###############')
+#     print('#### ' + sites[i] + ' ####')
+#     print('###############')
+#     delta_arr = np.linspace(deltaMins[i],deltaMaxs[i],100)
+#     getInterpBFdata(site_in=sites[i], delta_arr_in=delta_arr,yrsInSec=yrs[i])
+#     i += 1

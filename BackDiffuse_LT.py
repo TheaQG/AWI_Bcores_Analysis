@@ -25,6 +25,7 @@ from Decon import SpectralDecon
         - Make sure that final diff len corresponds to 32 peaks!
         - If diff len < 0, then don't continue!!!
         - How to get peaks not to be directly close to each other? Needs a cycle understanding?
+        - (12/02/21) Create method w. diffusion length as fct., sigma(z), instead of fixed.
 '''
 
 class BackDiffuse():

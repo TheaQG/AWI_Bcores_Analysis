@@ -7,6 +7,8 @@ from pandas import ExcelWriter
         *********** TODO************
 
         - (26/01/21) Fix function to return corespecs of specific core as well as all data.
+        - (12/02/21) Add function for density profile creation
+        - (12/02/21) Add function for diffusion profile creation
 '''
 
 def GetCoreData(site_in, type_in='Alphabet'):
