@@ -160,3 +160,169 @@ def GetCoreData(site_in, type_in='Alphabet'):
                                      'sigma_o18': sigma_o18_LT, 'sigma_o17': sigma_o17_LT})
 
     return  data_d18O, data_d18O_LT, data_ECM, data_ECM_LT, data_dens, data_dens_LT, data_diff, data_diff_LT
+
+
+
+
+
+
+
+
+
+
+
+def GetDensProfile(site_in, path_densMeas, delim_densMeas, path_isoMeas, delim_isoMeas, path_outFile, delim_outFile, area_in='Alphabet', zMeas_str = 'depth', densMeas_str = 'density'):
+    import HL_AnalyticThea_class
+
+    from HL_AnalyticThea_class import HL_Thea
+
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+    coreNames = CoresSpecs['CoreName']
+    site = site_in
+
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+
+    dTamb = CoreSpecs['dTamb']
+    dLaki = CoreSpecs['dLaki']
+    bdot0 = CoreSpecs['Accum0']
+    Temp0 = CoreSpecs['T0']+273.15
+    dens0 = CoreSpecs['dens0']
+    z0 = CoreSpecs['z0']
+
+
+    try:
+        densMeas = pd.read_csv(path_densMeas,delim_densMeas)
+        densMeas_in = True
+    except:
+        print('No density measurements. Creating purely analytical profile.')
+        densMeas_in = False
+        dens0 = 350
+
+    if densMeas_in:
+        z_vec = densMeas[zMeas_str]
+        rho_vec = densMeas[densMeas_str].astype('float64')
+
+        hl_inst = HL_Thea(z_meas = z_vec, rho_meas = rho_vec,\
+                             Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = False)
+        hl_model = hl_inst.model(z_vec)
+
+        hl_instOpti = HL_Thea(z_meas = z_vec, rho_meas = rho_vec,\
+                             Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = True)
+
+        hl_modelOpti = hl_instOpti.model(z_vec)
+
+        data = pd.DataFrame({'depth':z_vec,'rhoMeas':rho_vec,'HLmodel': hl_model['rhoHL'],'HLmodelOpti': hl_modelOpti['rhoHL']})
+        data.to_csv(path_outFile,index=None,sep=delim_outFile)
+
+    else:
+        z_vec = np.asarray(pd.read_csv(path_isoMeas,delim_isoMeas)[zMeas_str])
+
+        hl_inst = HL_Thea(Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = False)
+        hl_model = hl_inst.model(z_vec)
+
+        data = pd.DataFrame({'depth':z_vec,'HLmodel': hl_model['rhoHL']})
+        data.to_csv(path_outFile,index=None,sep=delim_outFile)
+
+    return
+
+'''
+    Density profile creation:
+'''
+# from GetCoreData_fct import GetDensProfile
+# core = 'SiteA'
+#
+# pathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
+# pathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + 'DepthDens_w_Models.txt'
+# pathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
+#
+# delimIso = ','
+# delimOut = '\t'
+# delimDens = '\t'
+#
+# GetDensProfile(site_in = core, path_densMeas=pathDens,delim_densMeas=delimDens, path_isoMeas=pathIso, delim_isoMeas=delimIso, path_outFile=pathOut, delim_outFile=delimOut, area_in='Alphabet', zMeas_str = 'depth', densMeas_str = 'density')
+
+
+
+
+
+def GetDiffProfile(site_in, path_outFile, delim_outFile, path_densMeas,delim_densMeas, path_isoMeas, delim_isoMeas, densMeas_str='density', zMeas_str='depth', dz_in=0.55):
+    import HL_AnalyticThea_class
+    from HL_AnalyticThea_class import HL_Thea
+
+    import sigma
+    from sigma import SigmaToolbox
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+    coreNames = CoresSpecs['CoreName']
+    site = site_in
+
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+
+    dTamb = CoreSpecs['dTamb']
+    dLaki = CoreSpecs['dLaki']
+    bdot0 = CoreSpecs['Accum0']
+    Temp0 = CoreSpecs['T0']+273.15
+    dens0 = CoreSpecs['dens0']
+    z0 = CoreSpecs['z0']
+
+
+    try:
+        densMeas = pd.read_csv(path_densMeas,delim_densMeas)
+        densMeas_in = True
+    except:
+        print('No density measurements. Creating purely analytical profile.')
+        densMeas_in = False
+        dens0 = 350
+
+    if densMeas_in:
+        z_vec = densMeas[zMeas_str]
+        rho_vec = densMeas[densMeas_str].astype('float64')
+
+        hl_inst = HL_Thea(z_meas = z_vec, rho_meas = rho_vec,\
+                             Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = False)
+        hl_model = hl_inst.model(z_vec)
+
+        hl_instOpti = HL_Thea(z_meas = z_vec, rho_meas = rho_vec,\
+                             Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = True)
+
+        hl_modelOpti = hl_instOpti.model(z_vec)
+        f0_fin = hl_modelOpti['f0_fin']; f1_fin = hl_modelOpti['f1_fin']
+
+
+        sigma_inst = SigmaToolbox()
+        sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
+                        fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
+
+    else:
+        z_vec = np.asarray(pd.read_csv(path_isoMeas,delim_isoMeas)[zMeas_str])
+
+
+        hl_inst = HL_Thea(Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = False)
+        hl_model = hl_inst.model(z_vec)
+        f0_fin = hl_model['f0_fin']; f1_fin = hl_model['f1_fin']
+
+        sigma_inst = SigmaToolbox()
+        sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
+                        fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
+
+
+    return
+
+'''
+    Diffusion profile creation:
+'''
+#
+# from GetCoreData_fct import GetDiffProfile
+#
+# PathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
+# PathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/' + core + '_DepthDiff2.txt'
+# PathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
+#
+# DelimIso = ','
+# DelimOut = '\t'
+# DelimDens = '\t'
+#
+# GetDiffProfile(site_in=core, path_outFile=PathOut, delim_outFile=DelimOut, path_densMeas=PathDens, delim_densMeas=DelimDens, path_isoMeas=PathIso, delim_isoMeas=DelimIso)
