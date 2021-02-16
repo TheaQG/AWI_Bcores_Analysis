@@ -289,7 +289,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0):
+    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -310,7 +310,13 @@ class BackDiffuse():
         sigma_rangeHL = self.diffLenEstimateHL()
         sigma_FitEst = self.spectralEstimate()
 
-        dInt, d18OInt, Delta = self.interpCores()
+        if interpBFDecon:
+            dInt, d18OInt, Delta = self.interpCores()
+        else:
+            isoData = self.d18OData
+            dInt = np.asarray(isoData['depth'])
+            d18OInt = np.asarray(isoData['d18O'])
+            Delta = dInt[1] - dInt[0]
 
         if theoDiffLen:
             diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.01

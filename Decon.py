@@ -320,6 +320,7 @@ class SpectralDecon():
 
         OptFilter = Psignal / (Pnoise + Psignal)
 #        sigma = 0.05#s_eta2_fit
+
         M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
         R = OptFilter * M**(-1)
@@ -348,6 +349,8 @@ class SpectralDecon():
 
         OptFilter = Psignal / (Pnoise + Psignal)
 #        sigma = 0.05#s_eta2_fit
+        N = math.ceil(self.N_min/sigma.size) * sigma.size
+        sigmaDCT = sp.fft.dct(sigma, 2, n = N, norm='ortho')
         M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
         R = OptFilter * M**(-1)
@@ -372,10 +375,10 @@ class SpectralDecon():
         data = copy.deepcopy(self.y)
         depth = copy.deepcopy(self.t)
 
-        if len(sigma) > 1:
+        if hasattr(sigma, "__len__"):
             w_PSD, OptF, M, R = self.Filters2(sigma)
         else:
-            sigma_use=sigma[0]
+            sigma_use=sigma
             w_PSD, OptF, M, R = self.Filters(sigma_use)
 
         if data.size < self.N_min:
