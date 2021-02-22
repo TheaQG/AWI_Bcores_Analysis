@@ -57,7 +57,7 @@ class Sigma():
   Class Sigma
   Performs calculations of diffusion lengths
     """
-    def __init__(self, P = 1., rho_o = 330.1, rho_i = 917.1, rho_c = 550.1,\
+    def __init__(self, P = 1., rho_o = 330., rho_i = 917., rho_c = 550.,\
         rho_co = 804.3, fo = 1, f1 = 1, f_factor_o18 = "Majoube", f_factor_deuterium = "Merlivat", \
         f_factor_o17 = "Majoube"):
         """
@@ -774,7 +774,7 @@ class SigmaToolbox():
         approach. Diffusion lengths in m of firn at the current density.
         """
 
-        accum = accum*917./1000  #water equiv.
+#        accum = accum*917./1000  #water equiv.
 
 #        plt.close("all")
         sigma_o17_num = np.array(())
@@ -792,12 +792,12 @@ class SigmaToolbox():
         depths = herron_model["z"]
 
         sigma_instance = Sigma(P = P, rho_o = rho_o, fo = fo, f1 = f1)
-        for rho in rhos:
-            print(depths[rhos==rho][0], rho, end=' ')
-            sigma_o17_num = np.append(sigma_o18_num, sigma_instance.semi_analytical_HL(rho = rho, T = temp, accum = accum)[2])
-            sigma_o18_num = np.append(sigma_o18_num, sigma_instance.semi_analytical_HL(rho = rho, T = temp, accum = accum)[1])
-            sigma_D_num = np.append(sigma_D_num, sigma_instance.semi_analytical_HL(rho = rho, T = temp, accum = accum)[0])
-            print(sigma_o18_num[-1])
+        #for rho in rhos:
+        #    print(depths[rhos==rho][0], rho, end=' ')
+        #    sigma_o17_num = np.append(sigma_o18_num, sigma_instance.semi_analytical_HL(rho = rho, T = temp, accum = accum)[2])
+        #    sigma_o18_num = np.append(sigma_o18_num, sigma_instance.semi_analytical_HL(rho = rho, T = temp, accum = accum)[1])
+        #    sigma_D_num = np.append(sigma_D_num, sigma_instance.semi_analytical_HL(rho = rho, T = temp, accum = accum)[0])
+        #    print(sigma_o18_num[-1])
         sigma_o17_analyt = sigma_instance.analytical_HL(rhos, T = temp, accum = accum)[2]
         sigma_o18_analyt = sigma_instance.analytical_HL(rhos, T = temp, accum = accum)[1]
         sigma_D_analyt = sigma_instance.analytical_HL(rhos, T = temp, accum = accum)[0]

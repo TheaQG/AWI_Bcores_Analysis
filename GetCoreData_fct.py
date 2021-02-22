@@ -2,6 +2,8 @@ import numpy as np
 import os
 import pandas as pd
 from pandas import ExcelWriter
+from HL_AnalyticThea_class import HL_Thea
+from DiffusionProfiles_calculations import DiffusionLength
 
 '''
         *********** TODO************
@@ -245,14 +247,10 @@ def GetDensProfile(site_in, path_densMeas, delim_densMeas, path_isoMeas, delim_i
 
 
 
-
-
 def GetDiffProfile(site_in, path_outFile, delim_outFile, path_densMeas,delim_densMeas, path_isoMeas, delim_isoMeas, densMeas_str='density', zMeas_str='depth', dz_in=0.55):
     import HL_AnalyticThea_class
     from HL_AnalyticThea_class import HL_Thea
-
-    import sigma
-    from sigma import SigmaToolbox
+    from DiffusionProfiles_calculations import DiffusionLength
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
     coreNames = CoresSpecs['CoreName']
@@ -291,10 +289,12 @@ def GetDiffProfile(site_in, path_outFile, delim_outFile, path_densMeas,delim_den
         hl_modelOpti = hl_instOpti.model(z_vec)
         f0_fin = hl_modelOpti['f0_fin']; f1_fin = hl_modelOpti['f1_fin']
 
+        sigma_arr = diffProfileCalc(P = 0.75, temp = Temp0, accum = bdot0, rho_surf = dens0, f0 = f0_fin, f1 = f1_fin,\
+                           dz = dz_in, z_final = max(z_vec), fileout = path_outFile)
 
-        sigma_inst = SigmaToolbox()
-        sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
-                        fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
+#        sigma_inst = SigmaToolbox()
+#        sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
+#                        fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
 
     else:
         z_vec = np.asarray(pd.read_csv(path_isoMeas,delim_isoMeas)[zMeas_str])
@@ -304,25 +304,131 @@ def GetDiffProfile(site_in, path_outFile, delim_outFile, path_densMeas,delim_den
         hl_model = hl_inst.model(z_vec)
         f0_fin = hl_model['f0_fin']; f1_fin = hl_model['f1_fin']
 
-        sigma_inst = SigmaToolbox()
-        sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
-                        fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
+        sigma_arr = diffProfileCalc(P = 0.75, temp = Temp0, accum = bdot0, rho_surf = dens0, f0 = f0_fin, f1 = f1_fin,\
+                           dz = dz_in, z_final = max(z_vec), fileout = path_outFile)
+#        sigma_inst = SigmaToolbox()
+#        sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
+#                        fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
 
 
     return
 
+def diffProfileCalc(P = 0.75, temp = 244.15, accum = 0.025, rho_surf = 350.0, f0 = 1, f1 = 1,\
+                   dz = 1, z_final = 100, fileout = False):
+    sigma_o17_num = []
+    sigma_o18_num = []
+    sigma_D_num = []
+
+    herron_model = HL_Thea(Temp_0 = temp, Acc_0 = accum, rho_0 = rho_surf, f0_init = f0, f1_init = f1).model(np.arange(0, z_final, dz))
+    rhos = 1000*herron_model['rhoHL']
+    depths = herron_model['z']
+
+    sigmaInst = DiffusionLength(P = P, rho_surf = rho_surf, f0 = f0, f1 = f1)
+
+#    for rho in rhos:
+#        sigma_all = sigmaInst.semi_analytical_HL(rho = rho, T = temp, accum = accum)
+#        sigma_o17_num = np.append(sigma_o17_num, sigma_all[2])
+#        sigma_o18_num = np.append(sigma_o18_num, sigma_all[1])
+#        sigma_D_num = np.append(sigma_D_num, sigma_all[0])
+
+    sigma_D_analyt, sigma_o18_analyt, sigma_o17_analyt = sigmaInst.analytical_HL(rhos, T = temp, accum = accum)
+
+    if not fileout == False:
+        f = open(fileout, "w")
+        f.write("Depth\tDensity\tsigma_D\tsigma_o18\tsigma_o17\n")
+        data_out = np.transpose(np.vstack((depths, rhos, sigma_D_analyt, sigma_o18_analyt, sigma_o17_analyt)))
+        np.savetxt(f, data_out, delimiter = "\t", fmt = ("%0.2f", "%0.3f", "%0.6f", "%0.6f", "%0.6f"))
+        f.close()
+
+    return
+
+
+
+
 '''
     Diffusion profile creation:
 '''
+
+#from GetCoreData_fct import GetDiffProfile
+
+core = 'SiteA'
+
+PathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
+PathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/' + core + '_DepthDiffThea.txt'
+PathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
+
+DelimIso = ','
+DelimOut = '\t'
+DelimDens = '\t'
+
+GetDiffProfile(site_in=core, path_outFile=PathOut, delim_outFile=DelimOut, path_densMeas=PathDens, delim_densMeas=DelimDens, path_isoMeas=PathIso, delim_isoMeas=DelimIso)
+
+
+
+
+'''
+    OLD MODULE! DO NOT USE. LINKS TO VASILEIOS GKINIS sigma.py
+'''
+# def GetDiffProfile(site_in, path_outFile, delim_outFile, path_densMeas,delim_densMeas, path_isoMeas, delim_isoMeas, densMeas_str='density', zMeas_str='depth', dz_in=0.55):
+#     import HL_AnalyticThea_class
+#     from HL_AnalyticThea_class import HL_Thea
 #
-# from GetCoreData_fct import GetDiffProfile
+#     import sigma
+#     from sigma import SigmaToolbox
 #
-# PathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
-# PathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/' + core + '_DepthDiff2.txt'
-# PathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
+#     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+#     coreNames = CoresSpecs['CoreName']
+#     site = site_in
 #
-# DelimIso = ','
-# DelimOut = '\t'
-# DelimDens = '\t'
+#     core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+#     CoreSpecs = CoresSpecs.iloc[core_idx]
 #
-# GetDiffProfile(site_in=core, path_outFile=PathOut, delim_outFile=DelimOut, path_densMeas=PathDens, delim_densMeas=DelimDens, path_isoMeas=PathIso, delim_isoMeas=DelimIso)
+#     dTamb = CoreSpecs['dTamb']
+#     dLaki = CoreSpecs['dLaki']
+#     bdot0 = CoreSpecs['Accum0']
+#     Temp0 = CoreSpecs['T0']+273.15
+#     dens0 = CoreSpecs['dens0']
+#     z0 = CoreSpecs['z0']
+#
+#
+#     try:
+#         densMeas = pd.read_csv(path_densMeas,delim_densMeas)
+#         densMeas_in = True
+#     except:
+#         print('No density measurements. Creating purely analytical profile.')
+#         densMeas_in = False
+#         dens0 = 350
+#
+#     if densMeas_in:
+#         z_vec = densMeas[zMeas_str]
+#         rho_vec = densMeas[densMeas_str].astype('float64')
+#
+#         hl_inst = HL_Thea(z_meas = z_vec, rho_meas = rho_vec,\
+#                              Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = False)
+#         hl_model = hl_inst.model(z_vec)
+#
+#         hl_instOpti = HL_Thea(z_meas = z_vec, rho_meas = rho_vec,\
+#                              Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = True)
+#
+#         hl_modelOpti = hl_instOpti.model(z_vec)
+#         f0_fin = hl_modelOpti['f0_fin']; f1_fin = hl_modelOpti['f1_fin']
+#
+#
+#         sigma_inst = SigmaToolbox()
+#         sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
+#                         fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
+#
+#     else:
+#         z_vec = np.asarray(pd.read_csv(path_isoMeas,delim_isoMeas)[zMeas_str])
+#
+#
+#         hl_inst = HL_Thea(Acc_0 = bdot0, Temp_0 = Temp0, rho_0 = dens0, opti = False)
+#         hl_model = hl_inst.model(z_vec)
+#         f0_fin = hl_model['f0_fin']; f1_fin = hl_model['f1_fin']
+#
+#         sigma_inst = SigmaToolbox()
+#         sigma_arr = sigma_inst.experiment2(P = 0.75, temp = Temp0, accum = bdot0, rho_o = dens0, \
+#                         fo = f0_fin, f1 = f1_fin, dz = dz_in, z_final = max(z_vec), fileout =path_outFile)
+#
+#
+#     return

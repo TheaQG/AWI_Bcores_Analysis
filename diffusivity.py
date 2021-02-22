@@ -15,7 +15,7 @@ Changes history for diffusivity.py
           for example alpha_D = {"Merlivat": alpha_D_Merlivat, "Ellehoj": alpha_D_Ellehoj}
           FirnDiffusivity methods get a parameter called f_factor_version that is
           "Merlivat"/"Ellehoj" for deuterium and "Majoube"/"Ellehoj" for o18 and o17.
-29042015: Added various parametrizations for ice diffusivity based on 
+29042015: Added various parametrizations for ice diffusivity based on
           Ramseier, Delibaltas, Blicks, Sigfus. Everyting is in m2sec-1..!
 20082016: Added ice diffusivity parametrization for Itagaki100 m2sec-1
 #######################################################################################
@@ -152,6 +152,7 @@ class FirnDiffusivity():
         """
         Return Diffusivity in firn for HDO [m2sec-1]
         """
+        
         if type(self.rho) in [float, int]:
             self.rho = np.array((self.rho, ))
         set_zero_at = np.where(self.rho>self.rho_co)[0]

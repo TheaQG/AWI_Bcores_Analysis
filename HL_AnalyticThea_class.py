@@ -19,7 +19,7 @@ class HL_Thea():
     """
     def __init__(self, z_meas = np.zeros(10), rho_meas = np.zeros(10), \
                 Temp_0 = 218.15, Acc_0 = 0.027, rho_0 = 330., rho_I = 917., \
-                rho_Cr = 550., rho_CO = 804., opti = False, f0_init = 1, f1_init = 1):
+                rho_Cr = 550., rho_CO = 804.3, opti = False, f0_init = 1, f1_init = 1):
 
         """
             Initializes the class with the following arguments needed:
@@ -139,7 +139,7 @@ class HL_Thea():
 
     def drho_dt(self, z, rho, p):
         """
-            Calculates the change in density with depth in first stage of densification
+            Calculates the change in density with time
 
             Arguments:
             ----------
@@ -411,7 +411,7 @@ class HL_Thea():
         f0 = p[0]
         k0 = f0 * 11 * np.exp(-10160 / (self.Temp_0 * self.R))
         hIn = self.z_meas[0]
-        
+
         rho_surf = self.rho_I / (((self.rho_I - self.rho_0)/(self.rho_0)) * np.exp(hIn*self.rho_I*k0) + 1)
         return rho_surf
 
