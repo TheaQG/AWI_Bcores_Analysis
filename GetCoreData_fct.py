@@ -360,9 +360,9 @@ PathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores
 DelimIso = ','
 DelimOut = '\t'
 DelimDens = '\t'
-
-GetDiffProfile(site_in=core, path_outFile=PathOut, delim_outFile=DelimOut, path_densMeas=PathDens, delim_densMeas=DelimDens, path_isoMeas=PathIso, delim_isoMeas=DelimIso)
-
+#
+# GetDiffProfile(site_in=core, path_outFile=PathOut, delim_outFile=DelimOut, path_densMeas=PathDens, delim_densMeas=DelimDens, path_isoMeas=PathIso, delim_isoMeas=DelimIso)
+#
 
 
 
