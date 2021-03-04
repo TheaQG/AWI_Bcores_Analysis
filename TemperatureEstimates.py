@@ -19,7 +19,7 @@ from DiffusionProfiles_calculations import DiffusionLength
 from sigmaSolver import sigma_Solver
 
 
-def TempEst_analytical(site, N_InInt):
+def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
         # Read and define data of specific interest
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
@@ -30,8 +30,17 @@ def TempEst_analytical(site, N_InInt):
     CoreSpecs = CoresSpecs.iloc[core_idx]
     dTamb = CoreSpecs['dTamb']
     dLaki = CoreSpecs['dLaki']
-    accum0 = CoreSpecs['Accum0']
-    Temp0 = CoreSpecs['T0']
+
+    if T_in != 100:
+        Temp0 = T_in
+    else:
+        Temp0 = CoreSpecs['T0']
+
+    if Accum_in != 0:
+        accum0 = Accum_in
+    else:
+        accum0 = CoreSpecs['Accum0']
+
 
     DataAll = GetCoreData(site, 'Alphabet')
 
@@ -71,3 +80,13 @@ def TempEst_analytical(site, N_InInt):
         T_intEst[i] = T_est
 
     return T_intEst, diffLensN
+
+def TempEst_analytical_arr(diffLens_in = np.array([0.08]), Accum_in = 0.3):
+    diffLens = diffLens_in
+    sigmaSolver_inst = sigma_Solver()
+    T_intEst = np.zeros(len(diffLens))
+
+    for i in range(len(diffLens)):
+        T_est = sigmaSolver_inst.solveTemp(sigma_data = diffLens[i], accum = Accum_in)
+        T_intEst[i] = T_est
+    return T_intEst
