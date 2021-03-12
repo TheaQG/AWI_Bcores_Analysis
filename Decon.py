@@ -68,7 +68,7 @@ class SpectralDecon():
                     Plot the raw and the deconvoluted data.
     '''
 
-    def __init__(self, t, y, N_min):
+    def __init__(self, t, y, N_min, transType = 'DCT'):
         '''
             Initialize the class instance.
 
@@ -88,6 +88,7 @@ class SpectralDecon():
         self.y = y
         self.y = self.y - np.mean(self.y) # Detrending
         self.N_min = N_min
+        self.transType = transType
         self.dt = self.t[1] - self.t[0] # Setting sampling size
 
         return
@@ -107,9 +108,50 @@ class SpectralDecon():
         '''
         return
 
+    def Ndct(self):
+        '''
+            Directly computes the cosine transform for non-uniformly distributed input data.
+            Uses DCT-II with orthonormal normalization.
+            Frequencies are uniformly distributed and determined through FFT.
 
+            Arguments:
+            ----------
+                None
 
-    def dct(self):
+            Returns:
+            --------
+                freq:           [array of floats] Positive spectral frequencies (transform of t data).
+                NDCT:           [array of floats] Amplitude array of transformed y data.
+        '''
+
+        data = copy.deepcopy(self.y)
+        depth = copy.deepcopy(self.t)
+
+        if data.size < self.N_min:
+            N = math.ceil(self.N_min/data.size) * data.size
+        else:
+            N = data.size
+
+        dt = np.mean(np.diff(depth))
+        freq = np.fft.fftfreq(2*N, dt)[:(2*N)//2]
+
+        D = np.cos(np.outer(2*np.pi*freq,(depth + 1/(2*N))))
+
+        NDCT = 2*D.dot(data)
+        NDCT[0] = NDCT[0]*np.sqrt(1/(4*N))
+        NDCT[1:] = NDCT[1:]*np.sqrt(1/(2*N))
+
+        return freq, NDCT
+
+    def INdct(self, freq, Amp):
+
+        depth = copy.deepcopy(self.t)
+        N = freq.size
+        Di = np.cos(np.outer((depth + 1/(2*N)), 2*np.pi*freq[1:]))
+        s = Amp[0]/np.sqrt(N) + np.sqrt(2/N) * Di.dot(Amp[1:])
+        return s
+
+    def dct(self, N_in = 0):
         '''
             Computes the DCT through SciPy FFT package. Uses 2nd DCT with orthonormal normalization.
             Frequencies are computed through a regular FFT, taking only the positive frequencies, as
@@ -155,7 +197,13 @@ class SpectralDecon():
                 f:              [array of floats] Positive spectral frequencies, same as in self.dct.
                 P:              [array of floats] Computed Power Spectral Density, only positive values.
         '''
-        f, S = self.dct()
+
+        if self.transType == 'DCT':
+            f, S = self.dct()
+
+        elif self.transType == 'NDCT':
+            f, S = self.Ndct()
+
         P = abs(S)**2
 
         return f, P
@@ -327,7 +375,8 @@ class SpectralDecon():
 
         return w_PSD, OptFilter, M, R
 
-    def Filters2(self, sigma):
+
+    def Filters2(self, sigma, depthDiff):
         '''
             Computes spectral filters. Computes optimalfilter, OptFilter = Psignal / (Psignal + Pnoise),
             exponential transfer function, M, and restoration filter, R = OptFilter * M^(-1).
@@ -348,16 +397,18 @@ class SpectralDecon():
         w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _ , _, _ = self.SpectralFit(printFitParams=False, printDiffLen=False, printParamBounds=False)
 
         OptFilter = Psignal / (Pnoise + Psignal)
-#        sigma = 0.05#s_eta2_fit
-        N = math.ceil(self.N_min/sigma.size) * sigma.size
-        sigmaDCT = sp.fft.dct(sigma, 2, n = N, norm='ortho')
-        M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
-        R = OptFilter * M**(-1)
+        sig_arr = sigma*100
+        m = np.exp(-(depthDiff**2/(2*sig_arr**2)))
+        mNorm = 1/sum(m) * m
+        M = sp.fft.dct(mNorm, 2, norm='ortho')
+        #M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
-        return w_PSD, OptFilter, M, R
+        R = OptFilter * (M)**(-1)
 
-    def deconvolve(self, sigma):
+        return w_PSD, OptFilter, M, R, m
+
+    def deconvolve(self, sigma, depthDiff = np.array([])):
         '''
             Deconvolution of the restored spectral data, DCT(data) * R.
             Takes in to account that data and R are of different lengths, so R is discretized
@@ -376,7 +427,7 @@ class SpectralDecon():
         depth = copy.deepcopy(self.t)
 
         if hasattr(sigma, "__len__"):
-            w_PSD, OptF, M, R = self.Filters2(sigma)
+            w_PSD, OptF, M, R, m = self.Filters2(sigma, depthDiff)
         else:
             sigma_use=sigma
             w_PSD, OptF, M, R = self.Filters(sigma_use)
@@ -385,14 +436,26 @@ class SpectralDecon():
             idx = math.ceil(self.N_min/data.size)
             R_short = R[0::idx]
             w_PSD_short = w_PSD[0::idx]
+
         else:
             R_short = R
             w_PSD_short = w_PSD
 
-        data_f = sp.fft.dct(data, 2, norm='ortho')
-        decon_f = data_f * R_short
+        if self.transType == 'DCT':
+            # data_f = self.dct()
+            # idx = math.ceil(self.N_min/data.size)
+            # data_f_short = data_f[0::idx]
+            # decon_f = data_f_short * R_short
+            data_f = sp.fft.dct(data, 2, norm = 'ortho')
+            decon_f = data_f * R_short
+            data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
 
-        data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
+        elif self.transType == 'NDCT':
+            _, data_f = self.Ndct()
+            idx = math.ceil(self.N_min/data.size)
+            data_f_short = data_f[0::idx]
+            decon_f = data_f_short * R_short
+            data_decon = self.INdct(w_PSD_short, decon_f)#sp.fft.dct(decon_f, 3, norm='ortho')
 
         return depth, data_decon
 
