@@ -320,6 +320,8 @@ class BackDiffuse():
 
         if theoDiffLen:
             diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.01
+            print(f'Sigma fit: {sigma_FitEst*100:.2f}')
+            print(f'Min sigma analyt: {min(sigma_rangeHL)*100:.2f}')
         else:
             diffLen0 = diffLenStart_In
         print(f'Starting sigma: {diffLen0*100:.2f} [cm]')

@@ -233,17 +233,17 @@ def GetDensProfile(site_in, path_densMeas, delim_densMeas, path_isoMeas, delim_i
     Density profile creation:
 '''
 # from GetCoreData_fct import GetDensProfile
-# core = 'SiteA'
-#
-# pathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
-# pathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + 'DepthDens_w_Models.txt'
-# pathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
-#
-# delimIso = ','
-# delimOut = '\t'
-# delimDens = '\t'
-#
-# GetDensProfile(site_in = core, path_densMeas=pathDens,delim_densMeas=delimDens, path_isoMeas=pathIso, delim_isoMeas=delimIso, path_outFile=pathOut, delim_outFile=delimOut, area_in='Alphabet', zMeas_str = 'depth', densMeas_str = 'density')
+core = 'SiteH'
+
+pathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
+pathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + 'DepthDens_w_Models.txt'
+pathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
+
+delimIso = ','
+delimOut = '\t'
+delimDens = '\t'
+
+GetDensProfile(site_in = core, path_densMeas=pathDens,delim_densMeas=delimDens, path_isoMeas=pathIso, delim_isoMeas=delimIso, path_outFile=pathOut, delim_outFile=delimOut, area_in='Alphabet', zMeas_str = 'depth', densMeas_str = 'density')
 
 
 
@@ -351,10 +351,10 @@ def diffProfileCalc(P = 0.75, temp = 244.15, accum = 0.025, rho_surf = 350.0, f0
 
 #from GetCoreData_fct import GetDiffProfile
 
-core = 'SiteA'
+#core = 'SiteB'
 
 PathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
-PathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/' + core + '_DepthDiffThea.txt'
+PathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDiff/' + core + '_DepthDiff.txt'
 PathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
 
 DelimIso = ','
