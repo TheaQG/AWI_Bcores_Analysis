@@ -319,7 +319,7 @@ class BackDiffuse():
             Delta = dInt[1] - dInt[0]
 
         if theoDiffLen:
-            diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.01
+            diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.02
             print(f'Sigma fit: {sigma_FitEst*100:.2f}')
             print(f'Min sigma analyt: {min(sigma_rangeHL)*100:.2f}')
         else:

@@ -66,11 +66,13 @@ def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
 
     diffLensN = np.asarray(arr_DiffLens)[idxNCut]
 
+        # Compute sigma due to discrete sampling (taking an average of the sampling sizes in the interval)
     from DiffusionProfiles_calculations import sampling_sigma
     dz_ave = np.mean(np.diff(depth_LT))
+    dz_std = np.std(np.diff(depth_LT))
     diffLen_sample = sampling_sigma(dz_ave)
 
-    print(dz_ave)
+    print(f'Average sampling size in interval: {dz_ave:.4f} +/- {dz_std:.4f}')
     diffLensN_firn = np.sqrt(diffLensN**2 - diffLen_sample**2)
 
         # Determine temperature interval estimate (analytical solution to diffusion equation)
@@ -78,6 +80,7 @@ def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
 
     sigmaSolver_inst = sigma_Solver()
 
+        # Compute for both firn and total diffusion length estimate
     T_intEst = np.zeros(len(diffLensN))
     T_firn_intEst = np.zeros(len(diffLensN))
 
