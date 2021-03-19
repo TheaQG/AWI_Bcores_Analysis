@@ -49,9 +49,22 @@ def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
     data_dens = DataAll[4]; data_dens_LT = DataAll[5]
     data_diff = DataAll[6]; data_diff_LT = DataAll[7]
 
-
     depth_LT = data_d18O_LT['depth']
     d18O_LT = data_d18O_LT['d18O']
+
+    try:
+        dens_LT = data_dens_LT['HLmodelOpti']
+        densDepth_LT = data_dens_LT['depth']
+    except:
+        dens_LT = data_dens_LT['HLmodel']
+        densDepth_LT = data_dens_LT['depth']
+
+    dens_LT_ave = np.mean(dens_LT)*1000
+
+    if (dens_LT_ave < 804.3):
+        rhoMean = dens_LT_ave
+    elif (dens_LT_ave >= 804.3):
+        rhoMean = dens_LT_ave#804.3
 
 
         # Compute diffusion length estimate interval to result in N peaks
@@ -85,20 +98,20 @@ def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
     T_firn_intEst = np.zeros(len(diffLensN))
 
     for i in range(len(diffLensN)):
-        T_est = sigmaSolver_inst.solveTemp(sigma_data = diffLensN[i], accum = accum)# *(804.3/917.)
-        T_firn_est = sigmaSolver_inst.solveTemp(sigma_data = diffLensN_firn[i], accum = accum)# *(804.3/917.)
+        T_est = sigmaSolver_inst.solveTemp(sigma_data = diffLensN[i], accum = accum, rho_CO=rhoMean)
+        T_firn_est = sigmaSolver_inst.solveTemp(sigma_data = diffLensN_firn[i], accum = accum, rho_CO=rhoMean)
 
         T_intEst[i] = T_est
         T_firn_intEst[i] = T_firn_est
 
     return T_intEst, diffLensN, T_firn_intEst, diffLensN_firn
 
-def TempEst_analytical_arr(diffLens_in = np.array([0.08]), Accum_in = 0.3):
+def TempEst_analytical_arr(diffLens_in = np.array([0.08]), Accum_in = 0.3, rhoMeans_in = np.array([804.3])):
     diffLens = diffLens_in
     sigmaSolver_inst = sigma_Solver()
     T_intEst = np.zeros(len(diffLens))
 
     for i in range(len(diffLens)):
-        T_est = sigmaSolver_inst.solveTemp(sigma_data = diffLens[i], accum = Accum_in)
+        T_est = sigmaSolver_inst.solveTemp(sigma_data = diffLens[i], accum = Accum_in, rho_CO = rhoMeans_in[i])
         T_intEst[i] = T_est
     return T_intEst

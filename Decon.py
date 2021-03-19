@@ -17,7 +17,7 @@ from scipy import integrate
 from scipy.fft import dct
 import copy
 import math
-
+from mpmath import *
 class SpectralDecon():
     '''
         Methods available:
@@ -398,10 +398,21 @@ class SpectralDecon():
 
         OptFilter = Psignal / (Pnoise + Psignal)
 
-        sig_arr = sigma*100
-        m = np.exp(-(depthDiff**2/(2*sig_arr**2)))
-        mNorm = 1/sum(m) * m
-        M = sp.fft.dct(mNorm, 2, norm='ortho')
+        sig_arr = sigma
+        #m = np.exp(-(depthDiff**2/(2*sig_arr**2)))
+        #mNorm = 1/sum(m) * m
+        #M = sp.fft.dct(mNorm, 2, norm='ortho')
+
+        expo = -depthDiff**2/(2*sigma**2)
+
+
+        mp.dps = 10
+        test_mpf = [exp(x) for x in expo]
+        sumtest = sum(test_mpf)
+        test_mpfN = [x/(sumtest) for x in test_mpf]
+
+        m = test_mpf
+        M = sp.fft.dct(test_mpfN, 2, norm='ortho')
         #M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
         R = OptFilter * (M)**(-1)
