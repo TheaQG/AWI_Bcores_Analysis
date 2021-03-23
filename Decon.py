@@ -200,14 +200,57 @@ class SpectralDecon():
 
         if self.transType == 'DCT':
             f, S = self.dct()
-
+            P = abs(S)**2
         elif self.transType == 'NDCT':
             f, S = self.Ndct()
-
-        P = abs(S)**2
+            P = abs(S)**2
+        elif self.transType == 'FFT':
+            w, s, N = self.fft(N=self.N_min)
+            aS2 = np.abs(s)**2#/(2*(w[1]-w[0]))
+            P = aS2[np.where(w >= 0)]/(200*w[1]-w[0])#(aS2[np.where(w >= 0)] + aS2[np.where(w < 0)][::-1])/10 #/ N**2
+            #P = aS2
+            f = w[np.where(w >= 0)]
 
         return f, P
 
+
+
+    def fft(self, N = 8192):
+        '''
+            Arguments:
+            ----------
+                N:              [int] Number of points(must be as power of twos)
+
+            returns:
+            --------
+                w:              [array of floats] Frequencies, both negative and positive.
+                A:              [array of floats] Amplitude array containing real+complex values.
+        '''
+        dt = self.t[1] - self.t[0]
+
+        w = np.fft.fftfreq(N, dt)
+        A = sp.fft.fft(self.y, n = N) * dt
+
+        return w, A, N
+
+    def fft_psd(self, N = 8192):
+        '''
+            Arguments:
+            ----------
+                N:              [int] Number of points(must be as power of twos).
+
+            returns:
+            --------
+                w_pos:          [array of floats] Positive frequencies of the spectrum.
+                P:              [array of floats] The FFT-generated PSD of the time series (real and positive)
+        '''
+        w, s = self.fft(N)
+        aS2 = np.abs(s)**2
+        #P = (aS2[np.where(w >= 0)] + aS2[np.where(w < 0)][::-1]) / N**2
+        P = aS2
+        w_pos = w[np.where(w >= 0)]
+
+        return w_pos, P
 
 
     def SpectralFit(self, printFitParams=True, printDiffLen=True, printParamBounds=False,**kwargs):
