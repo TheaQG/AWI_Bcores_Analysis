@@ -205,12 +205,7 @@ class SpectralDecon():
             f, S = self.Ndct()
             P = abs(S)**2
         elif self.transType == 'FFT':
-            w, s, N = self.fft(N=self.N_min)
-            aS2 = np.abs(s)**2#/(2*(w[1]-w[0]))
-            P = aS2[np.where(w >= 0)]/(200*w[1]-w[0])#(aS2[np.where(w >= 0)] + aS2[np.where(w < 0)][::-1])/10 #/ N**2
-            #P = aS2
-            f = w[np.where(w >= 0)]
-
+            f, P = self.fft_psd()
         return f, P
 
 
@@ -229,7 +224,7 @@ class SpectralDecon():
         dt = self.t[1] - self.t[0]
 
         w = np.fft.fftfreq(N, dt)
-        A = sp.fft.fft(self.y, n = N) * dt
+        A = sp.fft.fft(self.y, n = N,norm='ortho')
 
         return w, A, N
 
@@ -244,13 +239,11 @@ class SpectralDecon():
                 w_pos:          [array of floats] Positive frequencies of the spectrum.
                 P:              [array of floats] The FFT-generated PSD of the time series (real and positive)
         '''
-        w, s = self.fft(N)
-        aS2 = np.abs(s)**2
-        #P = (aS2[np.where(w >= 0)] + aS2[np.where(w < 0)][::-1]) / N**2
-        P = aS2
-        w_pos = w[np.where(w >= 0)]
-
-        return w_pos, P
+        w, s, N = self.fft(N)
+        w_pos = w[np.where(w>=0)]
+        P = np.abs(s)**2
+        P_pos = P[np.where(w>=0)]
+        return w_pos, P_pos
 
 
     def SpectralFit(self, printFitParams=True, printDiffLen=True, printParamBounds=False,**kwargs):
@@ -500,6 +493,8 @@ class SpectralDecon():
             # idx = math.ceil(self.N_min/data.size)
             # data_f_short = data_f[0::idx]
             # decon_f = data_f_short * R_short
+            print(len(data))
+            print(len(R_short))
             data_f = sp.fft.dct(data, 2, norm = 'ortho')
             decon_f = data_f * R_short
             data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
@@ -510,6 +505,28 @@ class SpectralDecon():
             data_f_short = data_f[0::idx]
             decon_f = data_f_short * R_short
             data_decon = self.INdct(w_PSD_short, decon_f)#sp.fft.dct(decon_f, 3, norm='ortho')
+        elif self.transType == 'FFT':
+            print(len(R_short))
+            print(len(data))
+            dt = self.t[1] - self.t[0]
+
+            Ns = data.size
+            Nr = R.size
+
+            s_pad = np.append(data, np.zeros(5*Nr))
+            Npad = s_pad.size
+
+            k = Npad - Nr
+
+            R_pad = np.hstack((R[int(Nr/2):], np.zeros(k), R[:int(Nr/2)]))
+
+
+            Rf = R_pad
+            data_f = sp.fft.fft(s_pad)
+
+            decon_f = data_f*Rf
+            data_decon = (sp.fft.ifft(decon_f))[:Ns]
+
 
         return depth, data_decon
 

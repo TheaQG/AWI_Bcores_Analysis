@@ -73,7 +73,7 @@ class BackDiffuse():
                     on the measured delta values and a slope, a holocene temperature
                     estimate and a holocene delta estimate.
     '''
-    def __init__(self, coreName, d18OData, coreSpecs, depthMin, depthMax, ysInSec, interpAll = False, diffDensData_in = True, diffLenData = None, densData = None, Dist=3):
+    def __init__(self, coreName, d18OData, coreSpecs, depthMin, depthMax, ysInSec, interpAll = False, diffDensData_in = True, diffLenData = None, densData = None, Dist=3, transType='DCT'):
         '''
             Initialize the class instance.
 
@@ -108,7 +108,7 @@ class BackDiffuse():
         self.Dist = Dist
         self.densData = densData
         self.diffLenData = diffLenData
-
+        self.transType = transType
         return
 
 
@@ -258,7 +258,7 @@ class BackDiffuse():
         '''
         dInt, d18OInt, Delta = self.interpCores()
 
-        decon_inst = SpectralDecon(dInt, d18OInt, N)
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
         w_PSD, P_PSD, Pnoise, Psignal, P_fit, opt_fit_dict, params_fit, fit_func_val, fit_dict = decon_inst.SpectralFit(printFitParams=False, printDiffLen=False)
         diffLen_FitEst = opt_fit_dict['s_tot2_fit']
 
@@ -341,7 +341,7 @@ class BackDiffuse():
         print(f'Starting sigma: {diffLen0*100:.2f} [cm]')
 
             # Create an instance of the spectralDecon class from Decon.py, with the (non-) interpolated data.
-        decon_inst = SpectralDecon(dInt, d18OInt, N)
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
 
             # Use the wanted first sigma estimate to compute the first estimate of the back diffused data.
         depth0, dataD0 = decon_inst.deconvolve(diffLen0)
@@ -602,7 +602,7 @@ class BackDiffuse():
             diffLen0 = diffLenStart_In
         print(f'Starting sigma: {diffLen0*100:.2f} [cm]')
 
-        decon_inst = SpectralDecon(dInt, d18OInt, N)
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
 
         depth0, dataD0 = decon_inst.deconvolve(diffLen0)
 
@@ -754,7 +754,7 @@ class BackDiffuse():
 
         print(f'Sigma input: {diffLen*100:.2f} [cm]')
 
-        decon_inst = SpectralDecon(dInt, d18OInt, N)
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
 
         depthBD, dataBD = decon_inst.deconvolve(diffLen)
 
@@ -814,7 +814,7 @@ class BackDiffuse():
         print(f'Theo. sigma Min: {sigma_rangeHL[0]*100:.2f} [cm]')
         print(f'Theo. sigma Max: {sigma_rangeHL[1]*100:.2f} [cm]')
 
-        decon_inst = SpectralDecon(dInt, d18OInt, N)
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
 
         depth0, dataD0 = decon_inst.deconvolve(diffLenTheo0)
         depth1, dataD1 = decon_inst.deconvolve(diffLenTheo1)
@@ -884,7 +884,7 @@ class BackDiffuse():
 #                 temp_holo:      [float] Estimated holocene mean temperature.
 #                 delta_holo:     [float] Estimated holocene mean d18O .
 #                 slope:          [float] Estimated slope.
-# 
+#
 #             returns:
 #             --------
 #                 depth:          [arr of floats] Depth data.
