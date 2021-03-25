@@ -241,7 +241,7 @@ class BackDiffuse():
 
             return [], []
 
-    def spectralEstimate(self,N=2000):
+    def spectralEstimate(self,N=4000):
         '''
             Based on SpectralDecon instance, computes all parts for a spectral transform
             and fit given a depth series. Returns only estimated diff len.
@@ -289,7 +289,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+    def backDiffused(self, N=4000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes

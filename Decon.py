@@ -144,10 +144,23 @@ class SpectralDecon():
         return freq, NDCT
 
     def INdct(self, freq, Amp):
+        '''
+            Directly computes the inverse cosine transform for non-uniformly distributed input data.
+            Uses DCT-III with orthonormal normalization.
 
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                s:             [array of floats] Signal (transform of w data).
+        '''
         depth = copy.deepcopy(self.t)
+
         N = freq.size
         Di = np.cos(np.outer((depth + 1/(2*N)), 2*np.pi*freq[1:]))
+
         s = Amp[0]/np.sqrt(N) + np.sqrt(2/N) * Di.dot(Amp[1:])
         return s
 
@@ -186,7 +199,7 @@ class SpectralDecon():
 
     def dct_psd(self):
         '''
-            From the DCT method, computes the Power Spectral Density (PSD).
+            From the DCT/NDCT/FFT method, computes the Power Spectral Density (PSD).
 
 
             Arguments:
@@ -206,11 +219,12 @@ class SpectralDecon():
             P = abs(S)**2
         elif self.transType == 'FFT':
             f, P = self.fft_psd()
+
         return f, P
 
 
 
-    def fft(self, N = 8192):
+    def fft(self, N_in = 2000):
         '''
             Arguments:
             ----------
@@ -221,14 +235,20 @@ class SpectralDecon():
                 w:              [array of floats] Frequencies, both negative and positive.
                 A:              [array of floats] Amplitude array containing real+complex values.
         '''
-        dt = self.t[1] - self.t[0]
+        data = copy.deepcopy(self.y)
+        depth = copy.deepcopy(self.t)
 
-        w = np.fft.fftfreq(N, dt)
-        A = sp.fft.fft(self.y, n = N,norm='ortho')
+        if data.size < self.N_min:
+            N = math.ceil(self.N_min/data.size) * data.size
+        else:
+            N = data.size
+
+        A = sp.fft.fft(data, n = 2*N, norm='ortho')
+        w = np.fft.fftfreq(2*N, self.dt)[:(2*N)//2]
 
         return w, A, N
 
-    def fft_psd(self, N = 8192):
+    def fft_psd(self, N_in = 2000):
         '''
             Arguments:
             ----------
@@ -239,10 +259,13 @@ class SpectralDecon():
                 w_pos:          [array of floats] Positive frequencies of the spectrum.
                 P:              [array of floats] The FFT-generated PSD of the time series (real and positive)
         '''
-        w, s, N = self.fft(N)
+        w, s, N = self.fft()
+
         w_pos = w[np.where(w>=0)]
-        P = np.abs(s)**2
-        P_pos = P[np.where(w>=0)]
+        s_pos = s[np.where(w>=0)]
+
+        P_pos = np.abs(s_pos)**2
+
         return w_pos, P_pos
 
 
@@ -267,6 +290,7 @@ class SpectralDecon():
                 fit_dict:       [tuple] Dictionary from scipy.optimize.
         '''
         f, P = self.dct_psd()
+
 
         def calc_res(params, x, y, dt, weights):
             '''
@@ -403,7 +427,6 @@ class SpectralDecon():
         w_PSD, P_PSD, Pnoise, Psignal, P_fit, _, _ , _, _ = self.SpectralFit(printFitParams=False, printDiffLen=False, printParamBounds=False)
 
         OptFilter = Psignal / (Pnoise + Psignal)
-#        sigma = 0.05#s_eta2_fit
 
         M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
@@ -479,6 +502,8 @@ class SpectralDecon():
             sigma_use=sigma
             w_PSD, OptF, M, R = self.Filters(sigma_use)
 
+
+
         if data.size < self.N_min:
             idx = math.ceil(self.N_min/data.size)
             R_short = R[0::idx]
@@ -488,44 +513,22 @@ class SpectralDecon():
             R_short = R
             w_PSD_short = w_PSD
 
+
+
         if self.transType == 'DCT':
-            # data_f = self.dct()
-            # idx = math.ceil(self.N_min/data.size)
-            # data_f_short = data_f[0::idx]
-            # decon_f = data_f_short * R_short
-            print(len(data))
-            print(len(R_short))
             data_f = sp.fft.dct(data, 2, norm = 'ortho')
             decon_f = data_f * R_short
             data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
 
         elif self.transType == 'NDCT':
-            _, data_f = self.Ndct()
-            idx = math.ceil(self.N_min/data.size)
-            data_f_short = data_f[0::idx]
-            decon_f = data_f_short * R_short
-            data_decon = self.INdct(w_PSD_short, decon_f)#sp.fft.dct(decon_f, 3, norm='ortho')
+            w_f, data_f = self.Ndct()
+            decon_f = data_f * R
+            data_decon = self.INdct(w_PSD, decon_f)
+
         elif self.transType == 'FFT':
-            print(len(R_short))
-            print(len(data))
-            dt = self.t[1] - self.t[0]
-
-            Ns = data.size
-            Nr = R.size
-
-            s_pad = np.append(data, np.zeros(5*Nr))
-            Npad = s_pad.size
-
-            k = Npad - Nr
-
-            R_pad = np.hstack((R[int(Nr/2):], np.zeros(k), R[:int(Nr/2)]))
-
-
-            Rf = R_pad
-            data_f = sp.fft.fft(s_pad)
-
-            decon_f = data_f*Rf
-            data_decon = (sp.fft.ifft(decon_f))[:Ns]
+            data_f = np.real(sp.fft.fft(data, n = 2*len(data), norm='ortho')[:len(data)]*2)
+            decon_f = data_f * R_short
+            data_decon = np.real(sp.fft.ifft(decon_f, n=2*len(data), norm='ortho')[:len(data)]*2)#[:Ns]
 
 
         return depth, data_decon
