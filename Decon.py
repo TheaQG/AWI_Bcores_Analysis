@@ -18,6 +18,8 @@ from scipy.fft import dct
 import copy
 import math
 from mpmath import *
+import multiprocessing
+
 class SpectralDecon():
     '''
         Methods available:
@@ -435,8 +437,11 @@ class SpectralDecon():
         return w_PSD, OptFilter, M, R
 
 
-    def Filters2(self, sigma, depthDiff):
+
+    def Filters2(self, sigma_arr, z_arr):
         '''
+            !!!!!!!!!!!! NOT WORKING !!!!!!!!!!!!
+            
             Computes spectral filters. Computes optimalfilter, OptFilter = Psignal / (Psignal + Pnoise),
             exponential transfer function, M, and restoration filter, R = OptFilter * M^(-1).
 
@@ -457,28 +462,58 @@ class SpectralDecon():
 
         OptFilter = Psignal / (Pnoise + Psignal)
 
-        sig_arr = sigma
+
+        x_arr = z_arr
+        y_arr = sigma_arr
+
+        # Define objective function
+        def fct(x,a,b,c):
+            return a*(x**2) + b*x + c
+
+        # Fit curve to data
+        from scipy.optimize import curve_fit
+        popt, test = curve_fit(fct, x_arr, y_arr)
+        a, b, c = popt
+
+        Npoints = len(OptFilter)
+        delta = (max(x_arr) - min(x_arr))/Npoints
+
+        xInt = np.arange(min(x_arr), max(x_arr), delta)
+
+        yInt = fct(xInt, a, b, c)
+
+        sigma = yInt
+        zInt = xInt
         #m = np.exp(-(depthDiff**2/(2*sig_arr**2)))
         #mNorm = 1/sum(m) * m
         #M = sp.fft.dct(mNorm, 2, norm='ortho')
 
-        expo = -depthDiff**2/(2*sigma**2)
+        expo = -zInt**2/(2*sigma**2)
 
 
         mp.dps = 10
         test_mpf = [exp(x) for x in expo]
-        sumtest = sum(test_mpf)
-        test_mpfN = [x/(sumtest) for x in test_mpf]
+
+        #test_mpfN = [(x - minV)/(maxV - minV) for x in test_mpf]
+
+
+        #sumtest = 1/(10*np.pi)*sum(test_mpf)#/(2*np.pi)
+        minT = min(test_mpf)
+        maxT = max(test_mpf)
+        test_mpfN = [(x - minT)/(maxT - minT) for x in test_mpf]
 
         m = test_mpf
-        M = sp.fft.dct(test_mpfN, 2, norm='ortho')
+        M = sp.fft.dct(test_mpfN, 2, norm='ortho')#[1:]
+#        sumM = sum(M)
+        Mfin = (M - min(M))/(max(M) - min(M))
+#        Mfin = np.exp(-(2*np.pi*w_PSD)**2 * sigma**2 / 2)
         #M = np.exp(-(2 * np.pi * w_PSD)**2 * sigma**2 / 2)
 
-        R = OptFilter * (M)**(-1)
+        R = OptFilter * (Mfin)**(-1)
 
-        return w_PSD, OptFilter, M, R, m
+        return w_PSD, OptFilter, Mfin, R, m
 
-    def deconvolve(self, sigma, depthDiff = np.array([])):
+    def deconvolve(self, sigma):#, depthDiff = np.array([])):
         '''
             Deconvolution of the restored spectral data, DCT(data) * R.
             Takes in to account that data and R are of different lengths, so R is discretized
@@ -496,11 +531,11 @@ class SpectralDecon():
         data = copy.deepcopy(self.y)
         depth = copy.deepcopy(self.t)
 
-        if hasattr(sigma, "__len__"):
-            w_PSD, OptF, M, R, m = self.Filters2(sigma, depthDiff)
-        else:
-            sigma_use=sigma
-            w_PSD, OptF, M, R = self.Filters(sigma_use)
+        #if hasattr(sigma, "__len__"):
+        #    w_PSD, OptF, M, R, m = self.Filters2(sigma, depthDiff)
+        #else:
+        sigma_use=sigma
+        w_PSD, OptF, M, R = self.Filters(sigma_use)
 
 
 
@@ -533,7 +568,78 @@ class SpectralDecon():
 
         return depth, data_decon
 
+    def deconvolve2(self, z_arr, sigma_arr):
+        '''
+            Deconvolution when taking an entire array of diffusion lengths (diff. lens. at the given depth).
+            Deconvolution of the restored spectral data, DCT(data) * R.
+            Takes in to account that data and R are of different lengths, so R is discretized
+            to a lower resolution to be able to be multiplied with the data.
 
+            Arguments:
+            ----------
+                z_arr:                  [array of floats] Depth array from section defining what diffusion lengths to use.
+                sigma_arr:              [array of floats] Theoretical diffusion length array to be used in transfer function.
+
+            returns:
+            --------
+                depth:                  [array of floats] Original x data of time series.
+                data_decon:             [array of floats] Deconvolution of data multiplied with restoration filter.
+        '''
+        data = copy.deepcopy(self.y)
+        depth = copy.deepcopy(self.t)
+        N = self.N_min
+
+        if len(sigma_arr) != len(self.y):
+            x_arr = z_arr
+            y_arr = sigma_arr
+
+            # Define objective function
+            def fct(x,a,b,c):
+                return a*(x**2) + b*x + c
+
+            # Fit curve to data
+            from scipy.optimize import curve_fit
+            popt, test = curve_fit(fct, x_arr, y_arr)
+            # Define fit parameters
+            a, b, c = popt
+
+            # Define new x values
+            Npoints = len(data)
+            delta = (max(x_arr) - min(x_arr))/Npoints
+            xInt = np.arange(min(x_arr), max(x_arr), delta)
+
+            # Calculate new y values
+            yInt = fct(xInt, a, b, c)
+
+            sigmas = yInt
+            zInt = xInt
+        elif len(sigma_arr) == len(self.y):
+            sigmas = sigma_arr
+            zInt = z_arr
+
+        # Define a multiprocessing pool-instance with 4 threads (N_CPU = 4)
+        a_pool = multiprocessing.Pool(4)
+
+        # Calculate the new deconvoluted individual points of the data by folding N = len(data) times with
+        # N = len(data) transfer functions and pull out one individual data point each time.
+        # Run it on multiple processors to speed it up.
+
+        result = a_pool.starmap(self.funcDecon, zip(range(len(data)), sigmas))
+
+        # Save the results to numpy arrays
+        r = np.array(result,dtype=np.dtype('float,float,float,float'))
+        depthBD = r['f0']
+        dataBD = r['f1']
+        sigs = r['f3']
+
+
+        return depthBD, dataBD
+
+    def funcDecon(self, idx, sigma):
+        sigma_in = sigma
+        depth, data = self.deconvolve(sigma=sigma_in)
+
+        return depth[idx], data[idx], idx, sigma_in
 
     def func_Noise(self, w, s_eta2, a1, dz):
         '''
