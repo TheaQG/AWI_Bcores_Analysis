@@ -441,7 +441,7 @@ class SpectralDecon():
     def Filters2(self, sigma_arr, z_arr):
         '''
             !!!!!!!!!!!! NOT WORKING !!!!!!!!!!!!
-            
+
             Computes spectral filters. Computes optimalfilter, OptFilter = Psignal / (Psignal + Pnoise),
             exponential transfer function, M, and restoration filter, R = OptFilter * M^(-1).
 
@@ -513,7 +513,7 @@ class SpectralDecon():
 
         return w_PSD, OptFilter, Mfin, R, m
 
-    def deconvolve(self, sigma):#, depthDiff = np.array([])):
+    def deconvolve(self, sigma, invTransType='DCT'):#, depthDiff = np.array([])):
         '''
             Deconvolution of the restored spectral data, DCT(data) * R.
             Takes in to account that data and R are of different lengths, so R is discretized

@@ -582,7 +582,7 @@ class BackDiffuse():
 
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
-    def BackDiffused_const(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+    def BackDiffused_constraints(self, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
         sigma_rangeHL = self.diffLenEstimateHL()
         sigma_FitEst = self.spectralEstimate()
 
