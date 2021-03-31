@@ -554,19 +554,21 @@ class SpectralDecon():
             data_f = sp.fft.dct(data, 2, norm = 'ortho')
             decon_f = data_f * R_short
             data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
+            depth_decon = depth
 
         elif self.transType == 'NDCT':
             w_f, data_f = self.Ndct()
             decon_f = data_f * R
             data_decon = self.INdct(w_PSD, decon_f)
+            depth_decon = depth
 
         elif self.transType == 'FFT':
             data_f = np.real(sp.fft.fft(data, n = 2*len(data), norm='ortho')[:len(data)]*2)
             decon_f = data_f * R_short
             data_decon = np.real(sp.fft.ifft(decon_f, n=2*len(data), norm='ortho')[:len(data)]*2)#[:Ns]
+            depth_decon = depth
 
-
-        return depth, data_decon
+        return depth_decon, data_decon
 
     def deconvolve2(self, z_arr, sigma_arr):
         '''
