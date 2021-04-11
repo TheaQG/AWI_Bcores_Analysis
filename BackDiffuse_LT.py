@@ -425,7 +425,7 @@ class BackDiffuse():
                 # If wanted, print the current diffusion length and the corresponding peaks counted
             if print_Npeaks:
                 print(f'N peaks: {len(idxPeak)}')
-                print(f'sigma: {diffLen}')
+                print(f'sigma: {diffLen*100}:.2f')
 
                 # If the number of counted peaks is larger than the number of years in the section,
                 # then subtract a small amount from the diffusion length estimate.
@@ -506,7 +506,7 @@ class BackDiffuse():
                 # If wanted, print the current diffusion length and the corresponding peaks counted
             if print_Npeaks:
                 print(f'N peaks: {len(idxPeak)}')
-                print(f'sigma: {diffLen}')
+                print(f'sigma: {diffLen*100}:.2f')
 
                 # Add a small positive perturbation to the diffusion length estimate.
             diffLen += 0.0001
