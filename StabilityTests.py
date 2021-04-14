@@ -37,7 +37,7 @@ from Interpolation_Class import Interpolation
 '''
 
 
-def getDiffLen_V_Npeaks(site_in, diffLen_start, diffLen_end, yrsInSec=32, max_Npeaks = 500, interpType='CubicSpline'):
+def getDiffLen_V_Npeaks(site_in, diffLen_start, diffLen_end, yrsInSec=33, max_Npeaks = 500, interpType='CubicSpline'):
     site = site_in
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
@@ -90,7 +90,7 @@ def getDiffLen_V_Npeaks(site_in, diffLen_start, diffLen_end, yrsInSec=32, max_Np
     return
 
 
-def getInterpBFdata(site_in, delta_arr_in, yrsInSec=32, interpType='CubicSpline'):
+def getInterpBFdata(site_in, delta_arr_in, yrsInSec=33, interpType='CubicSpline'):
     site = site_in
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
@@ -156,7 +156,7 @@ def getInterpBFdata(site_in, delta_arr_in, yrsInSec=32, interpType='CubicSpline'
 
 
 
-def getInterpAFdata(site_in, delta_arr_in, yrsInSec=32):
+def getInterpAFdata(site_in, delta_arr_in, yrsInSec=33):
     site = site_in
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
