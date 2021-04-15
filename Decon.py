@@ -70,7 +70,7 @@ class SpectralDecon():
                     Plot the raw and the deconvoluted data.
     '''
 
-    def __init__(self, t, y, N_min, transType = 'DCT'):
+    def __init__(self, t, y, N_min, transType = 'DCT', resampling = 'uniform'):
         '''
             Initialize the class instance.
 
@@ -91,6 +91,7 @@ class SpectralDecon():
         self.y = self.y - np.mean(self.y) # Detrending
         self.N_min = N_min
         self.transType = transType
+        self.resampling = resampling
         self.dt = self.t[1] - self.t[0] # Setting sampling size
 
         return
@@ -109,6 +110,34 @@ class SpectralDecon():
             --------
         '''
         return
+
+    def interpData(self, DeltaInput=False, DeltaIn=0.):
+
+        d = self.t
+        x = self.y
+
+        if DeltaInput:
+            Delta = DeltaIn
+        else:
+            diff = np.diff(d)
+            Delta = round(min(diff), 3)
+
+        d_min = Delta * np.ceil(d[0]/Delta)
+        d_max = Delta * np.floor(d[-1]/Delta)
+
+        n = int(1 + (d_max - d_min)/Delta)
+
+        j_arr = np.linspace(0,n,n)
+        dhat0 = d_min + (j_arr - 1)*Delta
+
+        f = interpolate.CubicSpline(d,x)
+
+        xhat0 = f(dhat0)
+
+        dhat = dhat0[(dhat0 >= min(d)) & (dhat0 <= max(d))]
+        xhat = xhat0[(dhat0 >= min(d)) & (dhat0 <= max(d))]
+
+        return dhat, xhat, Delta
 
     def Ndct(self):
         '''
@@ -557,10 +586,22 @@ class SpectralDecon():
             depth_decon = depth
 
         elif self.transType == 'NDCT':
-            w_f, data_f = self.Ndct()
-            decon_f = data_f * R
-            data_decon = self.INdct(w_PSD, decon_f)
-            depth_decon = depth
+            if self.resampling == 'uniform':
+                data_Nuni = data
+                depth_Nuni = depth
+                N = len(R_short)+1
+                delta = (max(depth_Nuni) - min(depth_Nuni))/N#np.mean(np.diff(depth_Nuni))
+
+                depth_uni, data_uni, Delta = self.interpData(DeltaInput=True, DeltaIn = delta)
+                data_uni_f = sp.fft.dct(data_uni, 2, norm='ortho')
+                decon_f = data_uni_f  * R_short
+                data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
+                depth_decon = depth_uni
+            else:
+                w_f, data_f = self.Ndct()
+                decon_f = data_f * R
+                data_decon = self.INdct(w_PSD, decon_f)
+                depth_decon = depth
 
         elif self.transType == 'FFT':
             data_f = np.real(sp.fft.fft(data, n = 2*len(data), norm='ortho')[:len(data)]*2)
