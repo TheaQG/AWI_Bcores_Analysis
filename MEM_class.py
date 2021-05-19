@@ -31,8 +31,9 @@ class MEM():
     def __init__(self, t_data, y_data, M):
         self.t_data = t_data
         self.y_data = y_data
+        self.coefs = {}
         self.M = M
-
+        self.Coef()
         return
 
     def __call__(self, t_data, y_data, M, N = None, view = True, print_coefs = False):
@@ -56,7 +57,7 @@ class MEM():
             N = np.size(y_data)
 
         mem = MEM(t_data, y_data, M)
-        power = mem.Power(N, M)
+        power = mem.Power(N)
 
         if view == True:
             plt.ion()
@@ -67,11 +68,11 @@ class MEM():
             line2 = plt.semilogy(power[0], power[1])
 
         if print_coefs == True:
-            print(MEM.Coef(M, N)[1])
+            print(MEM.Coef()[1])
 
         return power[0], power[1]
 
-    def Coef(self, M):
+    def Coef(self):
         """
             On the basis of time seriess y_data and number of poles passed, M,
             computes the coefficients according to the MEM spectral transformation
@@ -87,7 +88,7 @@ class MEM():
                     a:
                     ref:
         """
-
+        M = self.M
         y = self.y_data
         N = np.size(y)
         y -= np.average(y)
@@ -131,9 +132,39 @@ class MEM():
             for kk in range(0,m):
                 a[kk] = aa[kk] - a[m]*aa[m-kk-1]
 
+        self.coefs["P"] = P
+        self.coefs["a"] = a
+        self.coefs["ref"] = ref
+
         return (P, a, ref)
 
-    def Power(self, N, M):
+    def _find_roots(self):
+        alphas = np.concatenate((np.array((-1,)), self.coefs["a"]))
+        zk = np.roots(alphas)
+
+        return zk
+
+    def _peak_frequencies(self, roots_zk):
+        dt = self.t_data[1] - self.t_data[0]
+        fk = np.angle(roots_zk)/2/np.pi/dt
+
+        return fk
+
+    def _peak_power(self, roots_zk):
+        Pm = self.coefs["P"][-1].astype(complex)
+        res = np.zeros(np.size(roots_zk), dtype = complex)
+
+        for i in range(np.size(res)):
+            zk = roots_zk[i]
+            term1 = zk - roots_zk
+            term2 = 1/zk - np.conjugate(roots_zk)
+            res[i] = Pm/(zk*np.prod(term1[term1!=0])*np.prod(term2[term2!=0]))
+
+        P_fk = np.real(res)
+
+        return P_fk
+
+    def Power(self, N):
         """
             On the basis of number of points wanted and number of poles passed,
             computes the PSD of the time series through Burg's MEM.
@@ -149,8 +180,8 @@ class MEM():
                     Pf:             [array of floats] Computed power (PSD).
         """
 
-        P = self.Coef(M)[0]
-        a = self.Coef(M)[1]
+        P = self.coefs["P"]#self.Coef(M)[0]
+        a = self.coefs["a"]#self.Coef(M)[1]
 
         Pm = P[-1]
         dt = self.t_data[1] - self.t_data[0]
