@@ -89,14 +89,21 @@ class Attenuation():
             specInst = MEM(tHat, yHat, self.M)
 
             roots = specInst._find_roots()
-            fk = specInst._peak_frequencies(roots)
-            Pk = specInst._peak_power(roots)
-        else:
-            wMax, PMax, idFull, wFull, PFull, area = self.findMaxPeak()
-            fk = wMax
-            Pk = area
+            fk0 = specInst._peak_frequencies(roots)
+            Pk0 = specInst._peak_power(roots)
 
-        return fk, Pk
+            fk = fk0[fk0>0]
+            Pk = Pk0[fk0>0]
+            keys = ['fk', 'peak_heights','Pk']
+            data_all = np.asarray([fk, Pk])
+        else:
+
+            #wMax, PMax, idFull, wFull, PFull, area = self.findMaxPeak()
+            #fk = wMax
+            #Pk = area
+            data_all, keys = self.findPeaks()
+
+        return data_all, keys
 
 
     def closestTwo(self, lst, K):
@@ -185,3 +192,23 @@ class Attenuation():
         area = sum(PFull)*dw
 
         return wMax, PMax, idFull, wFull, PFull, area
+
+
+    def findPeaks(self):
+        w = self.w
+        P = self.P
+
+        peaks, props = signal.find_peaks(P, height=0.025, width=0.001)
+
+        if bool(props):
+            data_all = np.zeros((len(props.keys())+1,len(peaks)))
+            data_all[0,:] = peaks
+            keys = ['peaks_idx']
+            for key, i in zip(props.keys(), range(1,len(peaks))):
+                keys.append(key)
+                data_all[i,:] = props[key]
+
+        dataLtoH = data_all[:, np.argsort(data_all[1,:])]
+        dataHtoL = np.flip(dataLtoH, axis=1)
+
+        return dataHtoL, keys
