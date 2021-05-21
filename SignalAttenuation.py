@@ -7,10 +7,11 @@ from scipy import interpolate
 
 class Attenuation():
 
-    def __init__(self, t, y, M = 30, N = 4000, PSD_Type = 'DCT'):
+    def __init__(self, t, y, wMin, M = 30, N = 4000, PSD_Type = 'DCT'):
 
         self.t = t
         self.y = y
+        self.wMin = wMin
         self.M = M
         self.N = N
         self.PSD_Type = PSD_Type
@@ -79,7 +80,7 @@ class Attenuation():
 
 
     def PeakProps(self):
-
+        print(self.wMin)
         w = self.w
         P = self.P
 
@@ -101,7 +102,7 @@ class Attenuation():
             #wMax, PMax, idFull, wFull, PFull, area = self.findMaxPeak()
             #fk = wMax
             #Pk = area
-            data_all, keys = self.findPeaks()
+            data_all, keys = self.findPeaks(wMin=self.wMin)
 
         return data_all, keys
 
@@ -194,11 +195,14 @@ class Attenuation():
         return wMax, PMax, idFull, wFull, PFull, area
 
 
-    def findPeaks(self):
+    def findPeaks(self, wMin):
         w = self.w
         P = self.P
 
-        peaks, props = signal.find_peaks(P, height=0.025, width=0.001)
+        Pnew = np.copy(P)
+        Pnew[w<wMin] = 0
+
+        peaks, props = signal.find_peaks(Pnew, height=0.025, width=0.001)
 
         if bool(props):
             data_all = np.zeros((len(props.keys())+1,len(peaks)))
