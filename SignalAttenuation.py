@@ -6,8 +6,73 @@ from scipy import signal
 from scipy import interpolate
 
 class Attenuation():
+    '''
+        Signal attenuation class to estimate attenuation of isotopic signal based
+        on power spectral densities by DCT, NDCT, FFT or MEM methods.
+        Can be used to estimate annual layer thickness of section in ice.
+        Finds resonance peaks in frequency spectrum and sorts them. If wMin != 0,
+        the maximal spectral peak found is found only at frequencies > wMin.
 
-    def __init__(self, t, y, wMin, M = 30, N = 4000, PSD_Type = 'DCT'):
+
+        Methods available:
+            __init__(self, t, y, wMin, M = 30, N = 4000, PSD_Type = 'DCT'):
+                    Initializes class intance given two required arguments (the
+                    depth series) and four optional.
+
+            __call__(self):
+                    Calls the instance and determines the maximal resonance peak
+                    and its magnitude.
+
+            DCT_PSD(self):
+                    Computes the PSD from DCT and returns frequency and magnitude (w,P).
+                    (Depth series is interpolated if non-uniformly sampled.)
+
+            NDCT_PSD(self):
+                    Computes the PSD from NDCT and returns frequency and magnitude (w,P).
+
+            FFT_PSD(self):
+                    Computes the PSD from FFT and returns frequency and magnitude (w,P).
+                    (Depth series is interpolated if non-uniformly sampled.)
+
+            MEM_PSD(self):
+                    Computes the PSD from MEM and returns frequency and magnitude (w,P).
+                    (Depth series is interpolated if non-uniformly sampled.)
+
+            PeakProps(self):
+                    DCT/NDCT/FFT:
+                        Computes the maximum spectral peak above the passed wMin and returns
+                        the magnitude and frequency, fk, Pk.
+                    mem:
+                        Analytically computes location and Pk of all significant
+                        peaks in spectrum
+
+            findPeaks(self, wMin):
+                    Finds peaks in spectrum with w >= wMin and their properties.
+                    Sorts them peaks and properties from highest to lowest and saves
+                    in matrix of data (dataHtoL) and list of keys (keys).
+
+            interpData(self, DeltaInput=False, DeltaIn=0.):
+                    Interpolates the passed depth series (t,y) with the smallest sampling
+                    distance found in the original data set as new sampling size.
+    '''
+    def __init__(self, t, y, wMin=0, M = 30, N = 4000, PSD_Type = 'DCT'):
+        '''
+            Initializes class instance. When initializing: perform PSD computation.
+
+            Arguments:
+            ----------
+                t:          [array of floats] Depth data of depth sereis
+                y:          [array of floats] Isotopic value data of depth series.
+                wMin:       [float] Minimum frequency to search for peaks above
+                M:          [int] Number of poles in MEM analysis
+                N:          [int] Number of frequency points in MEM analysis.
+                PSD_Type:   [str] Type of spectral transform to use. Must be in ['DCT', 'NDCT', 'FFT', 'MEM'].
+
+            Returns:
+            --------
+                None
+        '''
+
 
         self.t = t
         self.y = y
@@ -37,6 +102,17 @@ class Attenuation():
         return fk, Pk
 
     def DCT_PSD(self):
+        '''
+            Power spectral density estimation through discrete cosine transform.
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                None
+        '''
         tHat, yHat, dt = self.interpData(DeltaInput = True, DeltaIn = self.dtMean)
 
         specInst = SpectralDecon(tHat, yHat, self.N, transType='DCT')
@@ -48,6 +124,17 @@ class Attenuation():
         return
 
     def NDCT_PSD(self):
+        '''
+            Power spectral density estimation through nonuniform discrete cosine transform.
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                None
+        '''
         specInst = SpectralDecon(self.t, self.y, self.N, transType='NDCT')
 
         w, P =specInst.dct_psd()
@@ -57,6 +144,17 @@ class Attenuation():
         return
 
     def FFT_PSD(self):
+        '''
+            Power spectral density estimation through fast Fourier transform.
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                None
+        '''
         tHat, yHat, dt = self.interpData(DeltaInput = True, DeltaIn = self.dtMean)
 
         specInst = SpectralDecon(tHat, yHat, self.N, transType='FFT')
@@ -68,6 +166,17 @@ class Attenuation():
         return
 
     def MEM_PSD(self):
+        '''
+            Power spectral density estimation through Burg's Maximum Entropy Method.
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                None
+        '''
         tHat, yHat, dt = self.interpData(DeltaInput = True, DeltaIn = self.dtMean)
 
         specInst = MEM(tHat, yHat, self.M)
@@ -80,7 +189,20 @@ class Attenuation():
 
 
     def PeakProps(self):
-        print(self.wMin)
+        '''
+            Find spectral resonance peaks above certain frequency limit, wMin.
+
+            Arguments:
+            ----------
+                None
+
+            Returns:
+            --------
+                data_all:       [matrix of floats] Containing all peaks properties
+                                sorted from highest peak to lowest peak.
+                keys:           [lst of str] Containing the name of the peak properties.
+        '''
+        # print(self.wMin)
         w = self.w
         P = self.P
 
@@ -95,7 +217,7 @@ class Attenuation():
 
             fk = fk0[fk0>0]
             Pk = Pk0[fk0>0]
-            keys = ['fk', 'peak_heights','Pk']
+            keys = ['fk', 'Pk']
             data_all = np.asarray([fk, Pk])
         else:
 
@@ -106,38 +228,56 @@ class Attenuation():
 
         return data_all, keys
 
+    def findPeaks(self, wMin):
+        '''
+            Finding resonance spectral peaks and all their properties above frequency
+            limit wMin. Sorts peaks from highest to lowest.
 
-    def closestTwo(self, lst, K):
-        lstIn = np.copy(lst)
-        lstUse = np.copy(lst)
+            Arguments:
+            ----------
+                None
 
-        Close1_ = lstUse[min(range(len(lstUse)), key = lambda i: abs(lstUse[i]-K))]
-        id1 = np.where(lstIn == Close1_)[0][0]
+            Returns:
+            --------
+                None
+        '''
+        w = self.w
+        P = self.P
 
+        Pnew = np.copy(P)
+        Pnew[w<wMin] = 0
 
-        if Close1_ > K:
-            idDel = np.where(lstIn > K)
-            newLst = np.delete(lstUse, idDel)
-        elif Close1_ < K:
-            idDel = np.where(lstIn < K)
-            newLst = np.delete(lstUse, idDel)
-        #newLst = np.delete(lstUse, id1)
+        peaks, props = signal.find_peaks(Pnew, height=0.025, width=0.001)
 
-        Close2_ = newLst[min(range(len(newLst)), key = lambda i: abs(newLst[i] - K))]
-        id2 = np.where(lstIn == Close2_)[0][0]
+        if bool(props):
+            data_all = np.zeros((len(props.keys())+1,len(peaks)))
+            data_all[0,:] = peaks
+            keys = ['peaks_idx']
+            for key, i in zip(props.keys(), range(1,len(peaks))):
+                keys.append(key)
+                data_all[i,:] = props[key]
 
-        if id1 < id2:
-            Close2 = Close1_
-            Close1 = Close2_
-        elif id1 > id2:
-            Close1 = Close1_
-            Close2 = Close2_
+        dataLtoH = data_all[:, np.argsort(data_all[1,:])]
+        dataHtoL = np.flip(dataLtoH, axis=1)
 
-        vals = [Close1, Close2]
-        ids = np.sort([id1, id2])
-        return vals, ids
+        return dataHtoL, keys
 
     def interpData(self, DeltaInput=False, DeltaIn=0.):
+        '''
+            Interpolation of (t,y) depth series.
+            Uses cubic spline interpolation with a new sample size equal to the
+            minimal sample size in the original data set.
+
+            Arguments:
+            ----------
+                DeltaInput:     [bool] Default = False. Is inputted new sampling size? True/False.
+                DeltaIn:        [float] Default = 0. If new sampling size is inputted,
+                                        what is its value?
+
+            Returns:
+            --------
+                None
+        '''
 
         d = self.t
         x = self.y
@@ -165,54 +305,166 @@ class Attenuation():
 
         return dhat, xhat, Delta
 
-    def findMaxPeak(self):
-        w = self.w
-        P = self.P
-
-        idPeaks, propsPeaks = signal.find_peaks(P)
-        idTroughs, propsTroughs = signal.find_peaks(-P)
-
-        wPeaks = w[idPeaks]
-        PPeaks = P[idPeaks]
-
-        wTroughs = w[idTroughs]
-        PTroughs = P[idTroughs]
-
-        idMax = np.where(PPeaks == max(PPeaks))[0][0]
-        wMax = wPeaks[idMax]
-        PMax = PPeaks[idMax]
 
 
-        wClose, idClose = self.closestTwo(wTroughs, wMax)
 
-        idFull =  np.where((w >= wTroughs[idClose[0]]) & (w <= wTroughs[idClose[1]]))
-        wFull = w[idFull]
-        PFull = P[idFull]
+class AnnualLayerThick():
 
-        dw = np.mean(np.diff(wFull))
-        area = sum(PFull)*dw
+    def __init__(self, t, y, lenSecs):
+        self.t = t
+        self.y = y
+        self.lenSecs = lenSecs
 
-        return wMax, PMax, idFull, wFull, PFull, area
+        return
+
+    def __call__(self):
+        return
 
 
-    def findPeaks(self, wMin):
-        w = self.w
-        P = self.P
+    def ALT_section(self, tSec, ySec, wMinDCT=0., wMinNDCT=0., wMinFFT=0.):
+        AttInstDCT = Attenuation(tSec, ySec, wMinDCT, PSD_Type = 'DCT')
+        dataDCT, keysDCT = AttInstDCT()
 
-        Pnew = np.copy(P)
-        Pnew[w<wMin] = 0
+        AttInstNDCT = Attenuation(tSec, ySec, wMinNDCT, PSD_Type = 'NDCT')
+        dataNDCT, keysNDCT = AttInstNDCT()
 
-        peaks, props = signal.find_peaks(Pnew, height=0.025, width=0.001)
+        AttInstFFT = Attenuation(tSec, ySec, wMinFFT, PSD_Type = 'FFT')
+        dataFFT, keysFFT = AttInstFFT()
 
-        if bool(props):
-            data_all = np.zeros((len(props.keys())+1,len(peaks)))
-            data_all[0,:] = peaks
-            keys = ['peaks_idx']
-            for key, i in zip(props.keys(), range(1,len(peaks))):
-                keys.append(key)
-                data_all[i,:] = props[key]
+#        AttInst4 = Attenuation(depthTop, d18OTop, wMin, PSD_Type = 'MEM')
+#        dataMEM, keysMEM = AttInst4()
 
-        dataLtoH = data_all[:, np.argsort(data_all[1,:])]
-        dataHtoL = np.flip(dataLtoH, axis=1)
 
-        return dataHtoL, keys
+
+        wDCT = AttInstDCT.w
+        PDCT = AttInstDCT.P
+
+        wNDCT = AttInstNDCT.w
+        PNDCT = AttInstNDCT.P
+
+        wFFT = AttInstFFT.w
+        PFFT = AttInstFFT.P
+
+        #wMEM = AttInst4.w
+        #PMEM = AttInst4.P
+
+
+
+        fkDCT = wDCT[dataDCT[0].astype(int)]
+        hsDCT = dataDCT[1]
+
+
+        fkNDCT = wNDCT[dataNDCT[0].astype(int)]
+        hsNDCT = dataNDCT[1]
+
+
+        fkFFT = wFFT[dataFFT[0].astype(int)]
+        hsFFT = dataFFT[1]
+
+
+        fksMax = np.asarray([fkDCT[0], fkNDCT[0], fkFFT[0]])
+
+        return fksMax, fkDCT, fkNDCT, fkFFT
+
+    def ALT_fullCore(self):
+        t = self.t
+        y = self.y
+        lSecs = self.lenSecs
+
+        tMin = np.floor(min(t))
+        tMax = np.ceil(max(t))
+
+        vals = np.arange(tMin,tMax,lSecs)
+
+        wMinDCT_in = 0
+        wMinNDCT_in = 0
+        wMinFFT_in = 0
+
+        fksMax_all = []
+
+
+        for i in range(len(vals) - 1):
+            cutOff_High = vals[i]
+            cutOff_Low = vals[i+1]
+
+            tSec = t[(t >= cutOff_High) & (t <= cutOff_Low)]
+            ySec = y[(t >= cutOff_High) & (t <= cutOff_Low)]
+
+            fksMax, _, _, _ = self.ALT_section(tSec, ySec, wMinDCT_in, wMinNDCT_in, wMinFFT_in)
+
+            fksMax_all.append(fksMax)
+            wMinDCT_in = fksMax[0] - 0.2
+            wMinNDCT_in = fksMax[1] - 0.2
+            wMinFFT_in = fksMax[2] - 0.2
+
+        ls_all = 1/np.asarray(fksMax_all)
+        lMean = np.mean(ls_all, axis = 1)
+        lStd = np.std(ls_all, axis = 1)
+
+        return np.asarray(fksMax_all), ls_all, lMean, lStd, vals
+
+
+
+
+
+
+
+    # def closestTwo(self, lst, K):
+    #     lstIn = np.copy(lst)
+    #     lstUse = np.copy(lst)
+    #
+    #     Close1_ = lstUse[min(range(len(lstUse)), key = lambda i: abs(lstUse[i]-K))]
+    #     id1 = np.where(lstIn == Close1_)[0][0]
+    #
+    #
+    #     if Close1_ > K:
+    #         idDel = np.where(lstIn > K)
+    #         newLst = np.delete(lstUse, idDel)
+    #     elif Close1_ < K:
+    #         idDel = np.where(lstIn < K)
+    #         newLst = np.delete(lstUse, idDel)
+    #     #newLst = np.delete(lstUse, id1)
+    #
+    #     Close2_ = newLst[min(range(len(newLst)), key = lambda i: abs(newLst[i] - K))]
+    #     id2 = np.where(lstIn == Close2_)[0][0]
+    #
+    #     if id1 < id2:
+    #         Close2 = Close1_
+    #         Close1 = Close2_
+    #     elif id1 > id2:
+    #         Close1 = Close1_
+    #         Close2 = Close2_
+    #
+    #     vals = [Close1, Close2]
+    #     ids = np.sort([id1, id2])
+    #     return vals, ids
+    #
+    #
+    # def findMaxPeak(self):
+    #     w = self.w
+    #     P = self.P
+    #
+    #     idPeaks, propsPeaks = signal.find_peaks(P)
+    #     idTroughs, propsTroughs = signal.find_peaks(-P)
+    #
+    #     wPeaks = w[idPeaks]
+    #     PPeaks = P[idPeaks]
+    #
+    #     wTroughs = w[idTroughs]
+    #     PTroughs = P[idTroughs]
+    #
+    #     idMax = np.where(PPeaks == max(PPeaks))[0][0]
+    #     wMax = wPeaks[idMax]
+    #     PMax = PPeaks[idMax]
+    #
+    #
+    #     wClose, idClose = self.closestTwo(wTroughs, wMax)
+    #
+    #     idFull =  np.where((w >= wTroughs[idClose[0]]) & (w <= wTroughs[idClose[1]]))
+    #     wFull = w[idFull]
+    #     PFull = P[idFull]
+    #
+    #     dw = np.mean(np.diff(wFull))
+    #     area = sum(PFull)*dw
+    #
+    #     return wMax, PMax, idFull, wFull, PFull, area
