@@ -289,7 +289,7 @@ class BackDiffuse():
 
         return sigma_range
 
-    def backDiffused(self, N=4000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+    def backDiffused(self, N=4000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0., diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True, diffLenMin = 0.):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks. Computes first any value that returns ysInSec peaks, and computes
@@ -447,7 +447,8 @@ class BackDiffuse():
                 # then stop the algorithm.
             if diffLen >= diffLenEnd_In:
                 break
-
+            if diffLen <= diffLenMin:
+                break
 
             ###############
             ## SIGMA OPTIMIZATION ROUTINE UNDER CONSTRAINTS

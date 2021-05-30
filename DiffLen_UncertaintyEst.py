@@ -338,7 +338,7 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
 
     depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
 
-    return diffLen
+    return diffLen, dTamb, dLaki
 
 
 
@@ -346,16 +346,18 @@ sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 
 for i in range(len(sites)):
     site = sites[i]
-    print('\n\n########## '+site+' ##########\n')
+    print('\n##########'+site+'##########\n')
     N_InInt = 33
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
     N = 500
     diffLens = np.zeros(N)
+    dTambs = np.zeros(N)
+    dLakis = np.zeros(N)
 
     for i in range(N):
         print(i)
-        diffLens[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
+        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
 
-    np.savetxt(site+'diffLens_GaussDist.csv', diffLens)
+    np.savetxt(site+'diffLens_GaussDistwDepths.csv', np.array([diffLens,dTambs,dLakis]))
