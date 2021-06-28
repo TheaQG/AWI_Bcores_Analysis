@@ -16,7 +16,7 @@ from scipy import linalg
 from scipy import integrate
 from scipy.fft import dct
 from scipy import signal
-
+from SignalAttenuation import Attenuation, AnnualLayerThick
 from Decon import SpectralDecon
 
 '''
@@ -584,8 +584,17 @@ class BackDiffuse():
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
     def BackDiffused_constraints(self, LayerThickness, N_summers, N_winters, Amplitude, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
-        sigma_rangeHL = self.diffLenEstimateHL()
-        sigma_FitEst = self.spectralEstimate()
+        lSecs = 5
+
+        isoData = self.d18OData
+        depth_ALT = np.asarray(isoData['depth'])
+        d18O_ALT = np.asarray(isoData['d18O'])
+
+        inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+        fksMax, ls, lMean, lStd, vals = inst_ALT.ALT_fullCore()
+        vals_use = vals[:-1]
+        l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+
 
         if interpBFDecon:
             dInt, d18OInt, Delta = self.interpCores()
@@ -594,6 +603,18 @@ class BackDiffuse():
             dInt = np.asarray(isoData['depth'])
             d18OInt = np.asarray(isoData['d18O'])
             Delta = dInt[1] - dInt[0]
+
+
+        ALT_LT = l_LT
+
+        points_ALT = ALT_LT * len(dInt)/(max(dInt) - min(dInt))
+        acceptPct_dist = 2/4
+        dist = np.floor(points_ALT * acceptPct_dist)
+
+        sigma_rangeHL = self.diffLenEstimateHL()
+        sigma_FitEst = self.spectralEstimate()
+
+
 
         if theoDiffLen:
             diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.02
@@ -605,149 +626,113 @@ class BackDiffuse():
 
         decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
 
-        depth0, dataD0 = decon_inst.deconvolve(diffLen0)
+        min_peakDist = dist
 
-        from scipy import signal
-        N_peaks = 0
+        Delta0 = 0.03
 
-        depth = depth0
-        data = dataD0
-        diffLen = diffLen0
+        sigMin0 = diffLen0 - 2*Delta0
+        sigMax0 = diffLen0 + 2*Delta0
 
-        arr_diffLens = []
-        arr_Npeaks = []
-        arr_depth = []
-        arr_data = []
-        i = 0
-        while N_peaks != self.ysInSec:
-            depth, data = decon_inst.deconvolve(diffLen)
-            if interpAfterDecon:
-                if newDelta == 0:
-                    newDeltaUse = (depth[1] - depth[0])/2
-                else:
-                    newDeltaUse = newDelta
-                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
-                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-                ave_Npoints = ave_dist/newDeltaUse
-                min_peakDist = int(ave_Npoints/self.Dist)
+        epsilon = 1e-10
+        kmax = 50
+        k = 0
 
-            else:
-                newDepth = depth
-                newData = data
-                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-                ave_Npoints = ave_dist/(newDepth[-1] - newDepth[0])
-                min_peakDist = int(ave_Npoints/self.Dist)
+        sigMin = sigMin0
+        sigMax = sigMax0
+        N_sigs = 5
+        diffLens = np.linspace(sigMin, sigMax, N_sigs)
 
-            if min_peakDist==0:
-                idxPeak = signal.find_peaks(newData)[0]
-            else:
-                idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+        Npeaks = self.ysInSec
+        Ntroughs = self.ysInSec
 
-            N_peaks = len(idxPeak)
 
-            arr_diffLens.append(diffLen)
-            arr_Npeaks.append(N_peaks)
-            arr_depth.append(newDepth)
-            arr_data.append(newData)
+        while (diffLens[1] - diffLens[0]) > epsilon:
 
-            if print_Npeaks:
-                print(len(idxPeak))
-                print(diffLen)
+            diffLens = np.linspace(sigMin, sigMax, N_sigs)
 
-            if N_peaks > self.ysInSec:
-                diffLen -= 0.0001
-                i += 1
-                if i%100 == 0:
-                    print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
-            if N_peaks < self.ysInSec:
-                diffLen += 0.0001005
-                i += 1
-                if i%100 == 0:
-                    print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
+            lenPs = np.zeros(len(diffLens))
+            lenTs = np.zeros(len(diffLens))
+            patterns = np.zeros(len(diffLens))
+            Pss = []
+            Tss = []
 
-            if diffLen >= diffLenEnd_In:
-                break
+            for i in range(len(diffLens)):
+                diffLen0 = diffLens[i]
 
-        while N_peaks == self.ysInSec:
-            depth, data = decon_inst.deconvolve(diffLen)
+                depth0, dataD0 = decon_inst.deconvolve(diffLen0)
 
-            if interpAfterDecon:
-                if newDelta == 0:
-                    newDeltaUse = (depth[1] - depth[0])/2
-                else:
-                    newDeltaUse = newDelta
-                newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
-                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-                ave_Npoints = ave_dist/newDeltaUse
-                min_peakDist = int(ave_Npoints/self.Dist)
-            else:
-                newDepth = depth
-                newData = data
-                Delta = depth[1]-depth[0]
-                ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-                ave_Npoints = ave_dist/Delta
-                min_peakDist = int(ave_Npoints/self.Dist)
+                acceptPct_prom = 2/4
+                promT = np.std(dataD0) * acceptPct_prom
+                promP = np.std(dataD0) * acceptPct_prom
 
-            if min_peakDist==0:
-                idxPeak = signal.find_peaks(newData)[0]
-            else:
-                idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+                pattern, start, end, Ps, Ts = self.find_constrainedPeaks(dataD0, min_peakDist, promP)
 
-            N_peaks = len(idxPeak)
+                # if k%10 == 0:
+                #     print(f'Pattern?\t {pattern}')
+                #     print(f'N peaks: {len(Ps)}')
+                #     print(f'N troughs: {len(Ts)}\n')
+                Pss.append(Ps)
+                Tss.append(Ts)
+                lenPs[i] = len(Ps)
+                lenTs[i] = len(Ts)
+                patterns[i] = pattern
 
-            arr_diffLens.append(diffLen)
-            arr_Npeaks.append(N_peaks)
-            arr_depth.append(newDepth)
-            arr_data.append(newData)
+            firstTrue = np.where(lenPs > Npeaks)[0][0]
 
-            if print_Npeaks:
-                print(len(idxPeak))
-                print(diffLen)
-            diffLen += 0.0001
-            i += 1
-            if i%100 == 0:
-                print(f'{i}. Npeaks: {N_peaks}, diffLen: {diffLen*100:.3f} cm')
+            sigMin = diffLens[firstTrue - 1]
+            sigMax = diffLens[firstTrue]
 
-        diffLen -= 0.0002
+            k += 1
+        newPs = Pss[firstTrue - 1]
+        newTs = Tss[firstTrue - 1]
+        newPattern = patterns[firstTrue - 1]
+
+        diffLen = sigMin
+
+
         depth, data = decon_inst.deconvolve(diffLen)
-        if interpAfterDecon:
-            if newDelta == 0:
-                newDeltaUse = (depth[1] - depth[0])/2
-            else:
-                newDeltaUse = newDelta
-            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
-            ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-            ave_Npoints = ave_dist/newDeltaUse
-            min_peakDist = int(ave_Npoints/self.Dist)
-        else:
-            newDepth = depth
-            newData = data
-            Delta = newDepth[1] - newDepth[0]
-            ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-            ave_Npoints = ave_dist/Delta
-            min_peakDist = int(ave_Npoints/self.Dist)
 
-        if min_peakDist==0:
-            idxPeak = signal.find_peaks(newData)[0]
-        else:
-            idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+        newDepth = depth
+        newData = data
 
-        N_peaks = len(idxPeak)
+        # if interpAfterDecon:
+        #     if newDelta == 0:
+        #         newDeltaUse = (depth[1] - depth[0])/2
+        #     else:
+        #         newDeltaUse = newDelta
+        #     newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
+        #     ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+        #     ave_Npoints = ave_dist/newDeltaUse
+        #     min_peakDist = int(ave_Npoints/self.Dist)
+        # else:
+        #     newDepth = depth
+        #     newData = data
+        #     Delta = newDepth[1] - newDepth[0]
+        #     ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
+        #     ave_Npoints = ave_dist/Delta
+        #     min_peakDist = int(ave_Npoints/self.Dist)
+        #
+        # if min_peakDist==0:
+        #     idxPeak = signal.find_peaks(newData)[0]
+        # else:
+        #     idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
+        #
+        # N_peaks = len(idxPeak)
 
-        arr_diffLens.append(diffLen)
-        arr_Npeaks.append(N_peaks)
-        arr_depth.append(newDepth)
-        arr_data.append(newData)
+#        arr_diffLens.append(diffLen)
+#        arr_Npeaks.append(N_peaks)
+#        arr_depth.append(newDepth)
+#        arr_data.append(newData)
 
         print(f'Final sigma: {diffLen*100:.2f} [cm]')
-        print(f'Final # of peaks: {N_peaks}')
+        print(f'Final # of peaks: {Npeaks}')
         print(f'Delta: {depth[1]-depth[0]:.3f}')
         print(f'Delta new: {newDepth[1]-newDepth[0]:.3f}')
         depthEst = newDepth
         dataEst = newData
         diffLenFin = diffLen
 
-        return
+        return depthEst, dataEst, diffLenFin, newPs, newTs, newPattern#, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
     def BackDiffuse_manuel(self, sigma, N = 2000, newDelta = 0.01, interpAfterDecon=True):
         diffLen = sigma
@@ -910,18 +895,84 @@ class BackDiffuse():
         '''
         return
 
-    def countPeaks():
-        '''
+    def find_constrainedPeaks(self, data, dist, prom):
+
+            # Find peaks and troughs in data, given distance and prominence provided
+        peaksBD = sp.signal.find_peaks(data, distance = dist, prominence=prom)[0]
+        troughsBD = sp.signal.find_peaks(-data, distance = dist, prominence=prom)[0]
 
 
-            Arguments:
-            ----------
+            # Create lists of ones (representing peaks) and zeros (representing troughs)
+        peaksBD_lst = np.ones(len(peaksBD))
+        troughsBD_lst = np.zeros(len(troughsBD))
 
-            returns:
-            --------
 
-        '''
-        return
+            # Create array containing (unsorted) peaks and troughs positions and corresponding P (1) or T (0).
+        exts = np.concatenate((peaksBD,troughsBD))
+        exts_lst = np.concatenate((peaksBD_lst,troughsBD_lst))
+            # Sort both lists at the same time, thus matching up idxs and P/T (1/0) value
+        list1, list2 = (np.array(t) for t in zip(*sorted(zip(exts, exts_lst))))
+
+
+            # Check if list is divisible by two. If not, append P/T array with -1 and idx array with 0
+            # at either first or last position depending on starting with P (1) or T (0)
+        if len(list1)%2 != 0:
+            if list2[0] == 1:
+                listNew_lst = np.append(list2,-1)
+                listNew = np.append(list1,0)
+            elif list2[0] == 0:
+                listNew_lst = np.insert(list2,0,-1)
+                listNew = np.insert(list1,0,0)
+        else:
+            listNew_lst = list2
+            listNew = list1
+
+
+            # Reshape arrays into 2 x len(Ps/Ts)
+        PTs = listNew_lst.reshape((int(len(listNew_lst)/2)),2)
+        PTs_idx = listNew.reshape((int(len(listNew)/2)),2)
+
+
+            # Get only positive values from list (remove the appended values from earlier)
+        listNew_lstPos = listNew_lst[listNew_lst>=0]
+        listNew_Pos = listNew[listNew_lst>=0]
+
+
+            # If the first value in the array is a peak (1), make lists with all (estimated) peaks (every second
+            # element) and all troughs (every second + 1 element)
+        if listNew_lstPos[0] == 1:
+
+            listNew_lstPs = listNew_lstPos[::2]
+            listNew_Ps = listNew_Pos[::2]
+
+            listNew_lstTs = listNew_lstPos[1::2]
+            listNew_Ts = listNew_Pos[1::2]
+
+            # If the first value in the array is a trough (0), make list with all (estimated) peaks (every second
+            # + 1 element) and all troughs (every second element)
+        elif listNew_lstPos[0] == 0:
+            listNew_lstPs = listNew_lstPos[1::2]
+            listNew_Ps = listNew_Pos[1::2]
+
+            listNew_lstTs = listNew_lstPos[::2]
+            listNew_Ts = listNew_Pos[::2]
+
+
+            # Check if [..PTPTPTPTPT..] pattern exists by summing all estimated peaks and checking if sum(P) == len(Ps)
+            # and summing all estimated troughs and checking if sum(T) == 0
+            # If so, return pattern = True and what the pattern starts and ends with (P=1 and T=0)
+
+        if (sum(listNew_lstPs) == len(peaksBD)) & (sum(listNew_lstTs) == 0):
+            pattern = True
+            patternStart = listNew_lstPos[0]
+            patternEnd = listNew_lstPos[-1]
+            # If not, return pattern = False and start and end as empty lists.
+        else:
+            pattern = False
+            patternStart = []
+            patternEnd = []
+
+        return pattern, patternStart, patternEnd, listNew_Ps, listNew_Ts
 
 
 
