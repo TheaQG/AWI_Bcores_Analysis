@@ -437,7 +437,73 @@ class AnnualLayerThick():
         return np.asarray(fksMax_all), ls_all, lMean, lStd, vals
 
 
+    def ALT_fullCore_seq(self, shift = 1):
+        t = self.t
+        y = self.y
+        lSecs = self.lenSecs
 
+        lsecs = 5
+        Tmax = max(t)
+        tmax = Tmax - lsecs
+        lenMax = sum(t >= tmax)
+        idxEnd = len(t) - lenMax - 1
+
+        idxs = np.arange(0,idxEnd,shift)
+
+
+        wMinDCT_in = 0
+        wMinNDCT_in = 0
+        wMinFFT_in = 0
+        tNew = []
+        fksMax_all = [np.array([0,0,0])]
+
+        print(f'Entire core: {t[0]}-{t[-1]} [m]\n')
+        for i in idxs:
+
+            cutOff_High = t[i]
+            cutOff_Low = t[t <= (cutOff_High + lsecs)][-1]
+            if i%100 == 0:
+                print(f'ITERATION # {i}')
+                print(f'Depth: {cutOff_High:.2f}-{cutOff_Low:.2f} [m]')
+
+            tSec = t[(t >= cutOff_High) & (t <= cutOff_Low)]
+            ySec = y[(t >= cutOff_High) & (t <= cutOff_Low)]
+            tNew.append(tSec[0] + (tSec[-1] - tSec[0])/2)
+            fksMax, _, _, _ = self.ALT_section(tSec, ySec, wMinDCT_in, wMinNDCT_in, wMinFFT_in)
+
+            fksMax_all.append(fksMax)
+            fksMax_allArr = np.asarray(fksMax_all)
+
+            if fksMax[0] < 0:
+                wMinDCT_in =  fksMax_allArr[fksMax_allArr[:,0] > 0 , 0][-1] - 0.2 #fksMax_all[-2][0]
+            else:
+                wMinDCT_in = fksMax[0] - 0.2
+            if fksMax[1] < 0:
+                wMinNDCT_in = fksMax_allArr[fksMax_allArr[:,1] > 0 , 1][-1] - 0.2 #fksMax_all[-2][1]
+            else:
+                wMinNDCT_in = fksMax[1] - 0.1
+            if fksMax[2] < 0:
+
+                wMinFFT_in = fksMax_allArr[fksMax_allArr[:,2] > 0 , 2][-1] - 0.2 #fksMax_all[-2][2]
+            else:
+                 wMinFFT_in = fksMax[2] - 0.1
+
+        fksMax_all = fksMax_all[1:]
+        ls_all = 1/np.asarray(fksMax_all)
+
+        def avg(a):
+            return a[a > 0].mean()
+        def std(a):
+            return a[a>0].std()
+
+        lMean = np.apply_along_axis(avg, 1, ls_all)
+        lStd = np.apply_along_axis(std, 1, ls_all)
+
+#        lMean = np.mean(ls_all, axis = 1)
+#        lStd = np.std(ls_all, axis = 1)
+
+
+        return np.asarray(fksMax_all), ls_all, lMean, lStd, tNew
 
 
 

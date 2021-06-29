@@ -21,10 +21,6 @@ from Decon import SpectralDecon
 
 '''
         *********** TODO************
-
-        - Make sure that final diff len corresponds to 32 peaks!
-        - If diff len < 0, then don't continue!!!
-        - How to get peaks not to be directly close to each other? Needs a cycle understanding?
         - (12/02/21) Create method w. diffusion length as fct., sigma(z), instead of fixed.
 '''
 
@@ -297,15 +293,26 @@ class BackDiffuse():
 
             Arguments:
             ----------
-                N:              [int] Number of points to generate spectral data with.
+                N:                  [int] Default = 4000. Number of points to generate spectral data with.
+                print_Npeaks:       [bool] Default = True.
+                theoDiffLen:        [bool] Default = True.
+                diffLenStart_In:    [float] Default = 0.
+                diffLenEnd_In:      [float] Default = 0.1.
+                interpAfterDecon:   [bool] Default = True.
+                newDelta:           [float] Default = 0.
+                interpBFDecon:      [bool] Default = True.
+                diffLenMin:         [float] Default = 0.
 
             returns:
             --------
-                depthEst:       [arr of floats] Depth to estimated data.
-                dataEst:        [arr of floats] Backdiffused d18O data.
-                diffLenFin:     [float] Final diffusion length estimate.
-                idxPeak:        [arr of idxs] Number of peaks in the final data set.
-
+                depthEst:           [arr of floats] Depth to estimated data.
+                dataEst:            [arr of floats] Backdiffused d18O data.
+                diffLenFin:         [float] Final diffusion length estimate.
+                idxPeak:            [arr of idxs] Number of peaks in the final data set.
+                arr_diffLens:       [list of floats]
+                arr_Npeaks:         [list of ints]
+                arr_depth:          [list of arrs]
+                arr_data:           [list of arrs]
         '''
 
 
@@ -583,19 +590,63 @@ class BackDiffuse():
 
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
-    def BackDiffused_constraints(self, LayerThickness, N_summers, N_winters, Amplitude, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
-        lSecs = 5
+    def BackDiffused_constraints(self, sigDel0_in = 0.03, lSecs_in = 5, acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, epsilon_in = 1e-10, kmax_in = 50, N_sigs_in = 5, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+        '''
+            Method to compute the maximal diffusion length that still give ysInSec
+            peaks.
 
+            Arguments:
+            ----------
+                sigDel0_in:         [float] Default = 0.03.
+                lSecs_in:           [int] Default = 5.
+                acceptPct_dist_in:  [float] Default = 2/4.
+                acceptPct_prom_in:  [float] Default = 2/4.
+                epsilon_in:         [float] Default = 1e-10.
+                kmax_in:            [int] Default = 50.
+                N_sigs_in:          [int] Default = 5.
+                N:                  [int] Default = 4000. Number of points to generate spectral data with.
+                print_Npeaks:       [bool] Default = True.
+                theoDiffLen:        [bool] Default = True.
+                diffLenStart_In:    [float] Default = 0.
+                diffLenEnd_In:      [float] Default = 0.1.
+                interpAfterDecon:   [bool] Default = True.
+                newDelta:           [float] Default = 0.
+                interpBFDecon:      [bool] Default = True.
+                diffLenMin:         [float] Default = 0.
+
+            returns:
+            --------
+                newDepth:           [arr of floats] Depth to estimated data.
+                newData:            [arr of floats] Backdiffused d18O data.
+                diffLenFin:         [float] Final diffusion length estimate.
+                newPs:              [arr of idxs] Peak positions in the final data set.
+                newTs:              [arr of idxs] Trough positions in the final data set.
+                newPattern:         [bool] Is pattern present?
+        '''
+
+
+            ###############
+            ## INITIALIZATION AND ALT ESTIMATE COMPUTATION
+            ###############
+
+            # Define length [m] of sections to compute ALT from
+        lSecs = lSecs_in
+
+            # Set entire core data (depth and d18O) as separate np-arrays
         isoData = self.d18OData
         depth_ALT = np.asarray(isoData['depth'])
         d18O_ALT = np.asarray(isoData['d18O'])
 
+            # Create annual layer thickness instance
         inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+            # Compute ALT for entire core.
         fksMax, ls, lMean, lStd, vals = inst_ALT.ALT_fullCore()
+            # Compute an estimate for ALT at LT depth
         vals_use = vals[:-1]
         l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+        ALT_LT = l_LT
 
-
+            # If interpolation before deconvolution is wanted, then interpolate the isotope data
         if interpBFDecon:
             dInt, d18OInt, Delta = self.interpCores()
         else:
@@ -605,134 +656,177 @@ class BackDiffuse():
             Delta = dInt[1] - dInt[0]
 
 
-        ALT_LT = l_LT
-
+            # Estimate # of points in a layer cycle, based on newly interpolated data
         points_ALT = ALT_LT * len(dInt)/(max(dInt) - min(dInt))
-        acceptPct_dist = 2/4
+            # Set the accepted percentage of this distance estimate
+        acceptPct_dist = acceptPct_dist_in
         dist = np.floor(points_ALT * acceptPct_dist)
 
+            # Set the accepted percentage of the prominence
+        acceptPct_prom = acceptPct_prom_in
+
+            # Compute theoretical diffusion length estimates
         sigma_rangeHL = self.diffLenEstimateHL()
+            # Compute diffusion length estimate of spectral fit
         sigma_FitEst = self.spectralEstimate()
 
 
-
+            # Decide if the first diffusion length estimate should be given from the theoretical estimate.
         if theoDiffLen:
             diffLen0 = min(min(sigma_rangeHL), sigma_FitEst) - 0.02
             print(f'Sigma fit: {sigma_FitEst*100:.2f}')
             print(f'Min sigma analyt: {min(sigma_rangeHL)*100:.2f}')
+
+            # If not, then use the input diffusion length
         else:
             diffLen0 = diffLenStart_In
         print(f'Starting sigma: {diffLen0*100:.2f} [cm]')
 
+
+            # Create an instance of the spectralDecon class from Decon.py, with the (non-) interpolated data.
         decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
 
+            # Set the minimum peak distance as the accepted percentage of the ALT estimate
         min_peakDist = dist
 
-        Delta0 = 0.03
+            # Define the initial diff. len. perturbation as the inputted
+        sigDel0 = sigDel0_in
 
-        sigMin0 = diffLen0 - 2*Delta0
-        sigMax0 = diffLen0 + 2*Delta0
+            # Define initial diff len boundaries as twice the perturbation to each site of the diff len init estimate
+        sigMin0 = diffLen0 - 2*sigDel0
+        sigMax0 = diffLen0 + 2*sigDel0
 
-        epsilon = 1e-10
-        kmax = 50
+            # Set the minimal difference as the inputted
+        epsilon = epsilon_in
+            # Set the maximal and initial number of itarations
+        kmax = kmax_in
         k = 0
 
+            # Set the sigma boundaries as the initial
         sigMin = sigMin0
         sigMax = sigMax0
-        N_sigs = 5
+            # Set the number of section boundaries to search through to the inputted
+        N_sigs = N_sigs_in
+            # Define an array with the initial diff len bounds/sections
         diffLens = np.linspace(sigMin, sigMax, N_sigs)
 
+            # Set the number of peaks and troughs as the inputted from initialization of the class
         Npeaks = self.ysInSec
         Ntroughs = self.ysInSec
 
 
+            ###############
+            ## INITIATE THE PEAK COUNTING/CONSTRAINT MODULE OF ALGORITHM
+            ###############
+
+
+            # Continue to run this routine, while the difference in diff lens is larger than the inputted min diff epsilon
         while (diffLens[1] - diffLens[0]) > epsilon:
 
+                # Define an array with the diff len bounds/sections
             diffLens = np.linspace(sigMin, sigMax, N_sigs)
 
+                # Initialize empty arrays and lists to store final results in
+                    # Number of peaks
             lenPs = np.zeros(len(diffLens))
+                    # Number of troughs
             lenTs = np.zeros(len(diffLens))
+                    # Pattern? (True/False = 1.0/0.0)
             patterns = np.zeros(len(diffLens))
+                    # Peak positions
             Pss = []
+                    # Trough positions
             Tss = []
 
+                # Now, run through the diff len bounds under consideration
             for i in range(len(diffLens)):
+                    # Set diff len as the i'th element in the array
                 diffLen0 = diffLens[i]
 
+                    # Compute the deconvolved data with the current diff len
                 depth0, dataD0 = decon_inst.deconvolve(diffLen0)
 
-                acceptPct_prom = 2/4
+                    # Set the minimum prominence as the std of the data times the acceptance percentage defined above
                 promT = np.std(dataD0) * acceptPct_prom
                 promP = np.std(dataD0) * acceptPct_prom
 
-                pattern, start, end, Ps, Ts = self.find_constrainedPeaks(dataD0, min_peakDist, promP)
+                    # Interpolate the BD signal, if wanted
+                if interpAfterDecon:
+                        # If no interpolation size (newDelta) is inputted, choose half the first sample size
+                    if newDelta == 0:
+                        newDeltaUse = (depth0[1] - depth0[0])/2
+                        # Otherwise, use the inputted new sample size (newDelta)
+                    else:
+                        newDeltaUse = newDelta
+                        # Interpolate and define new data to use
+                    newDepth, newData, _ = interpCores2(depth0[0], depth0[-1], pd.Series(depth0), pd.Series(dataD0), DeltaInput=True, DeltaIn=newDeltaUse)
+
+                    # If no interpolation wanted, use signal data as new data to use
+                else:
+                    newDepth = depth0
+                    newData = dataD0
+
+                    # Use the method find_constrainedPeaks to estimate peaks, troughs, patterns
+                pattern, start, end, Ps, Ts = self.find_constrainedPeaks(newData, min_peakDist, promP)
 
                 # if k%10 == 0:
                 #     print(f'Pattern?\t {pattern}')
                 #     print(f'N peaks: {len(Ps)}')
                 #     print(f'N troughs: {len(Ts)}\n')
+
+                    # Save the results of interest
                 Pss.append(Ps)
                 Tss.append(Ts)
                 lenPs[i] = len(Ps)
                 lenTs[i] = len(Ts)
                 patterns[i] = pattern
 
+                # Find the first boundary (i.e. diff len) to exceed the expected number of peaks
             firstTrue = np.where(lenPs > Npeaks)[0][0]
 
+                # Set the new diff len min/max boundaries to the [first - 1]/first to exceed Npeaks
             sigMin = diffLens[firstTrue - 1]
             sigMax = diffLens[firstTrue]
 
+                # Add one to the iterator k
             k += 1
+
+
+
+
+            # Save the positions of the final peaks and troughs and pattern
         newPs = Pss[firstTrue - 1]
         newTs = Tss[firstTrue - 1]
         newPattern = patterns[firstTrue - 1]
 
-        diffLen = sigMin
+            # Define the final diff len estimate as the final minimum bound found
+        diffLenFin = sigMin
 
+            # Compute the depth and data corresponding to the final diff len estimate
+        depth, data = decon_inst.deconvolve(diffLenFin)
 
-        depth, data = decon_inst.deconvolve(diffLen)
+            # Interpolate the BD signal, if wanted
+        if interpAfterDecon:
+                # If no interpolation size (newDelta) is inputted, choose half the first sample size
+            if newDelta == 0:
+                newDeltaUse = (depth[1] - depth[0])/2
+                # Otherwise, use the inputted new sample size (newDelta)
+            else:
+                newDeltaUse = newDelta
+                # Interpolate and define new data to use
+            newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
 
-        newDepth = depth
-        newData = data
+            # If no interpolation wanted, use signal data as new data to use
+        else:
+            newDepth = depth
+            newData = data
 
-        # if interpAfterDecon:
-        #     if newDelta == 0:
-        #         newDeltaUse = (depth[1] - depth[0])/2
-        #     else:
-        #         newDeltaUse = newDelta
-        #     newDepth, newData, _ = interpCores2(depth[0], depth[-1], pd.Series(depth), pd.Series(data), DeltaInput=True, DeltaIn=newDeltaUse)
-        #     ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-        #     ave_Npoints = ave_dist/newDeltaUse
-        #     min_peakDist = int(ave_Npoints/self.Dist)
-        # else:
-        #     newDepth = depth
-        #     newData = data
-        #     Delta = newDepth[1] - newDepth[0]
-        #     ave_dist = (newDepth[-1] - newDepth[0])/self.ysInSec
-        #     ave_Npoints = ave_dist/Delta
-        #     min_peakDist = int(ave_Npoints/self.Dist)
-        #
-        # if min_peakDist==0:
-        #     idxPeak = signal.find_peaks(newData)[0]
-        # else:
-        #     idxPeak = signal.find_peaks(newData, distance=min_peakDist)[0]
-        #
-        # N_peaks = len(idxPeak)
-
-#        arr_diffLens.append(diffLen)
-#        arr_Npeaks.append(N_peaks)
-#        arr_depth.append(newDepth)
-#        arr_data.append(newData)
-
-        print(f'Final sigma: {diffLen*100:.2f} [cm]')
+        print(f'Final sigma: {diffLenFin*100:.2f} [cm]')
         print(f'Final # of peaks: {Npeaks}')
         print(f'Delta: {depth[1]-depth[0]:.3f}')
         print(f'Delta new: {newDepth[1]-newDepth[0]:.3f}')
-        depthEst = newDepth
-        dataEst = newData
-        diffLenFin = diffLen
 
-        return depthEst, dataEst, diffLenFin, newPs, newTs, newPattern#, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
+        return newDepth, newData, diffLenFin, newPs, newTs, newPattern#, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
     def BackDiffuse_manuel(self, sigma, N = 2000, newDelta = 0.01, interpAfterDecon=True):
         diffLen = sigma

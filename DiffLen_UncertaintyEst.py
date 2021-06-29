@@ -332,11 +332,17 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
 
 
         # Compute diffusion length estimate:
-    dataAll = pd.DataFrame({'depth':depth_LT,'d18O':d18O_LT}, index=None)
+    dataAll = pd.DataFrame({'depth':depth,'d18O':d18O}, index=None)
 
     inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
 
-    depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
+    depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints(LayerThickness=0, N_summers=0, N_winters=0, Amplitude=0, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True)
+
+    #dataAll = pd.DataFrame({'depth':depth_LT,'d18O':d18O_LT}, index=None)
+
+    #inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
+
+    #depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
 
     return diffLen, dTamb, dLaki
 
