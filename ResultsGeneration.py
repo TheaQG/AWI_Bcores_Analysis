@@ -40,6 +40,28 @@ from BackDiffuse_LT import BackDiffuse
 """
     - "First" guess ...
 """
+sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+
+for i in range(len(sites)):
+    site = sites[i]
+    print('\n##########'+site+'##########\n')
+    N_InInt = 33
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    N = 500
+    diffLens = np.zeros(N)
+    dTambs = np.zeros(N)
+    dLakis = np.zeros(N)
+
+    for i in range(N):
+        print(i)
+        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
+
+    np.savetxt(site+'diffLens_GaussDistwDepths.csv', np.array([diffLens,dTambs,dLakis]))
+
+
+
 """
     - Spectral transform effects (FFT/DCT/NDCT)
         - Sigma estimate
