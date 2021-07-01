@@ -437,12 +437,12 @@ class AnnualLayerThick():
         return np.asarray(fksMax_all), ls_all, lMean, lStd, vals
 
 
-    def ALT_fullCore_seq(self, shift = 1):
+    def ALT_fullCore_seq(self, shift = 1, printItes = False):
         t = self.t
         y = self.y
-        lSecs = self.lenSecs
+        lsecs = self.lenSecs
 
-        lsecs = 5
+#        lsecs = 5
         Tmax = max(t)
         tmax = Tmax - lsecs
         lenMax = sum(t >= tmax)
@@ -462,7 +462,7 @@ class AnnualLayerThick():
 
             cutOff_High = t[i]
             cutOff_Low = t[t <= (cutOff_High + lsecs)][-1]
-            if i%100 == 0:
+            if printItes and i%100 == 0:
                 print(f'ITERATION # {i}')
                 print(f'Depth: {cutOff_High:.2f}-{cutOff_Low:.2f} [m]')
 

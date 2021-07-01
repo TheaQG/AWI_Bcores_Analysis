@@ -590,7 +590,7 @@ class BackDiffuse():
 
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
-    def BackDiffused_constraints(self, sigDel0_in = 0.03, lSecs_in = 5, acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, epsilon_in = 1e-10, kmax_in = 50, N_sigs_in = 5, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+    def BackDiffused_constraints(self, sigDel0_in = 0.03, lSecs_in = 5, shift_in=50, acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, epsilon_in = 1e-10, kmax_in = 50, N_sigs_in = 5, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks.
@@ -640,11 +640,16 @@ class BackDiffuse():
             # Create annual layer thickness instance
         inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
             # Compute ALT for entire core.
-        fksMax, ls, lMean, lStd, vals = inst_ALT.ALT_fullCore()
+        fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
             # Compute an estimate for ALT at LT depth
-        vals_use = vals[:-1]
         l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
         ALT_LT = l_LT
+
+        # fksMax, ls, lMean, lStd, vals = inst_ALT.ALT_fullCore()
+        #     # Compute an estimate for ALT at LT depth
+        # vals_use = vals[:-1]
+        # l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+        # ALT_LT = l_LT
 
             # If interpolation before deconvolution is wanted, then interpolate the isotope data
         if interpBFDecon:
@@ -827,6 +832,84 @@ class BackDiffuse():
         print(f'Delta new: {newDepth[1]-newDepth[0]:.3f}')
 
         return newDepth, newData, diffLenFin, newPs, newTs, newPattern#, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
+
+    def BackDiffuse_manuel_constrained(self, sigma, ALT_LT_in, shift_in=50, lSecs_in = 5, acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+        diffLen = sigma
+        dInt, d18OInt, Delta = self.interpCores()
+
+        #print(f'Sigma input: {diffLen*100:.2f} [cm]')
+
+        lSecs = lSecs_in
+
+            # Set entire core data (depth and d18O) as separate np-arrays
+        isoData = self.d18OData
+        depth_ALT = np.asarray(isoData['depth'])
+        d18O_ALT = np.asarray(isoData['d18O'])
+
+        #     # Create annual layer thickness instance
+        # inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+        #     # Compute ALT for entire core.
+        # fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+        #     # Compute an estimate for ALT at LT depth
+        # l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+        # ALT_LT = l_LT
+        ALT_LT = ALT_LT_in
+
+        if interpBFDecon:
+            dInt, d18OInt, Delta = self.interpCores()
+        else:
+            isoData = self.d18OData
+            dInt = np.asarray(isoData['depth'])
+            d18OInt = np.asarray(isoData['d18O'])
+            Delta = dInt[1] - dInt[0]
+
+
+            # Estimate # of points in a layer cycle, based on newly interpolated data
+        points_ALT = ALT_LT * len(dInt)/(max(dInt) - min(dInt))
+            # Set the accepted percentage of this distance estimate
+        acceptPct_dist = acceptPct_dist_in
+        dist = np.floor(points_ALT * acceptPct_dist)
+
+            # Set the accepted percentage of the prominence
+        acceptPct_prom = acceptPct_prom_in
+
+
+            # Create an instance of the spectralDecon class from Decon.py, with the (non-) interpolated data.
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
+
+            # Set the minimum peak distance as the accepted percentage of the ALT estimate
+        min_peakDist = dist
+
+
+        decon_inst = SpectralDecon(dInt, d18OInt, N, self.transType)
+
+        depthBD, dataBD = decon_inst.deconvolve(diffLen)
+
+
+        if interpAfterDecon:
+                # If no interpolation size (newDelta) is inputted, choose half the first sample size
+            if newDelta == 0:
+                newDeltaUse = (depthBD[1] - depthBD[0])/2
+                # Otherwise, use the inputted new sample size (newDelta)
+            else:
+                newDeltaUse = newDelta
+                # Interpolate and define new data to use
+            newDepth, newData, _ = interpCores2(depthBD[0], depthBD[-1], pd.Series(depthBD), pd.Series(dataBD), DeltaInput=True, DeltaIn=newDeltaUse)
+
+            # If no interpolation wanted, use signal data as new data to use
+        else:
+            newDepth = depthBD
+            newData = dataBD
+
+        promT = np.std(dataBD) * acceptPct_prom
+        promP = np.std(dataBD) * acceptPct_prom
+
+        pattern, start, end, Ps, Ts = self.find_constrainedPeaks(newData, min_peakDist, promP)
+
+
+        return newDepth, newData, pattern, Ps, Ts, diffLen
+
+
 
     def BackDiffuse_manuel(self, sigma, N = 2000, newDelta = 0.01, interpAfterDecon=True):
         diffLen = sigma
@@ -1069,6 +1152,84 @@ class BackDiffuse():
         return pattern, patternStart, patternEnd, listNew_Ps, listNew_Ts
 
 
+def find_constrainedPeaks(data, dist, prom):
+
+        # Find peaks and troughs in data, given distance and prominence provided
+    peaksBD = sp.signal.find_peaks(data, distance = dist, prominence=prom)[0]
+    troughsBD = sp.signal.find_peaks(-data, distance = dist, prominence=prom)[0]
+
+
+        # Create lists of ones (representing peaks) and zeros (representing troughs)
+    peaksBD_lst = np.ones(len(peaksBD))
+    troughsBD_lst = np.zeros(len(troughsBD))
+
+
+        # Create array containing (unsorted) peaks and troughs positions and corresponding P (1) or T (0).
+    exts = np.concatenate((peaksBD,troughsBD))
+    exts_lst = np.concatenate((peaksBD_lst,troughsBD_lst))
+        # Sort both lists at the same time, thus matching up idxs and P/T (1/0) value
+    list1, list2 = (np.array(t) for t in zip(*sorted(zip(exts, exts_lst))))
+
+
+        # Check if list is divisible by two. If not, append P/T array with -1 and idx array with 0
+        # at either first or last position depending on starting with P (1) or T (0)
+    if len(list1)%2 != 0:
+        if list2[0] == 1:
+            listNew_lst = np.append(list2,-1)
+            listNew = np.append(list1,0)
+        elif list2[0] == 0:
+            listNew_lst = np.insert(list2,0,-1)
+            listNew = np.insert(list1,0,0)
+    else:
+        listNew_lst = list2
+        listNew = list1
+
+
+        # Reshape arrays into 2 x len(Ps/Ts)
+    PTs = listNew_lst.reshape((int(len(listNew_lst)/2)),2)
+    PTs_idx = listNew.reshape((int(len(listNew)/2)),2)
+
+
+        # Get only positive values from list (remove the appended values from earlier)
+    listNew_lstPos = listNew_lst[listNew_lst>=0]
+    listNew_Pos = listNew[listNew_lst>=0]
+
+
+        # If the first value in the array is a peak (1), make lists with all (estimated) peaks (every second
+        # element) and all troughs (every second + 1 element)
+    if listNew_lstPos[0] == 1:
+
+        listNew_lstPs = listNew_lstPos[::2]
+        listNew_Ps = listNew_Pos[::2]
+
+        listNew_lstTs = listNew_lstPos[1::2]
+        listNew_Ts = listNew_Pos[1::2]
+
+        # If the first value in the array is a trough (0), make list with all (estimated) peaks (every second
+        # + 1 element) and all troughs (every second element)
+    elif listNew_lstPos[0] == 0:
+        listNew_lstPs = listNew_lstPos[1::2]
+        listNew_Ps = listNew_Pos[1::2]
+
+        listNew_lstTs = listNew_lstPos[::2]
+        listNew_Ts = listNew_Pos[::2]
+
+
+        # Check if [..PTPTPTPTPT..] pattern exists by summing all estimated peaks and checking if sum(P) == len(Ps)
+        # and summing all estimated troughs and checking if sum(T) == 0
+        # If so, return pattern = True and what the pattern starts and ends with (P=1 and T=0)
+
+    if (sum(listNew_lstPs) == len(peaksBD)) & (sum(listNew_lstTs) == 0):
+        pattern = True
+        patternStart = listNew_lstPos[0]
+        patternEnd = listNew_lstPos[-1]
+        # If not, return pattern = False and start and end as empty lists.
+    else:
+        pattern = False
+        patternStart = []
+        patternEnd = []
+
+    return pattern, patternStart, patternEnd, listNew_Ps, listNew_Ts
 
 def interpCores2(valMin, valMax, d_In, x_In, pad = 1, DeltaInput = False, DeltaIn = 0, interpAll=True):
     '''
