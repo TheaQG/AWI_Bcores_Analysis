@@ -634,22 +634,36 @@ class BackDiffuse():
 
             # Set entire core data (depth and d18O) as separate np-arrays
         isoData = self.d18OData
-        depth_ALT = np.asarray(isoData['depth'])
-        d18O_ALT = np.asarray(isoData['d18O'])
 
-            # Create annual layer thickness instance
-        inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
-            # Compute ALT for entire core.
-        fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+
+            # If file with ALTs already exists, then load data from file.
+        try:
+            print('ALT file exists. Loading ALT data.')
+            site = self.coreName
+            pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
+            data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(shift_in)+'.csv')
+
+            lMean = data['lMean']
+            lStd = data['lStd']
+            vals_use = data['depth']
+
+            # Otherwise compute ALTs
+        except:
+            print('ALT file does NOT exist. Computing ALT for core.')
+
+            depth_ALT = np.asarray(isoData['depth'])
+            d18O_ALT = np.asarray(isoData['d18O'])
+
+                # Create annual layer thickness instance
+            inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+                # Compute ALT for entire core.
+            fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+
             # Compute an estimate for ALT at LT depth
         l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+
         ALT_LT = l_LT
 
-        # fksMax, ls, lMean, lStd, vals = inst_ALT.ALT_fullCore()
-        #     # Compute an estimate for ALT at LT depth
-        # vals_use = vals[:-1]
-        # l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
-        # ALT_LT = l_LT
 
             # If interpolation before deconvolution is wanted, then interpolate the isotope data
         if interpBFDecon:
