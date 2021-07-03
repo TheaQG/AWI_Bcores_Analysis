@@ -594,7 +594,10 @@ class SpectralDecon():
 
                 depth_uni, data_uni, Delta = self.interpData(DeltaInput=True, DeltaIn = delta)
                 data_uni_f = sp.fft.dct(data_uni, 2, norm='ortho')
-                decon_f = data_uni_f  * R_short
+                if len(data_uni_f) == len(R_short):
+                    decon_f = data_uni_f  * R_short
+                else:
+                    decon_f = data_uni_f  * R_short[:-1]
                 data_decon = sp.fft.dct(decon_f, 3, norm='ortho')
                 depth_decon = depth_uni
             else:
