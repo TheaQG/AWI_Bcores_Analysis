@@ -15,6 +15,7 @@ from scipy import optimize
 from scipy import linalg
 from scipy import integrate
 from scipy.fft import dct
+import time
 
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['text.latex.preamble'] = [
@@ -82,6 +83,12 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
     depth_ECM_LT = np.asarray(data_ECM_LT['depth']); ECM_LT = np.asarray(data_ECM_LT['ECM'])
 
     lenLT = dLaki_in - dTamb_in
+
+    isoData = data_d18O
+    def avg(a):
+        return a[a > 0].mean()
+    def std(a):
+        return a[a>0].std()
 
     try:
         pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
@@ -166,12 +173,12 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
         # Compute diffusion length estimate:
     dataAll = pd.DataFrame({'depth':depth,'d18O':d18O}, index=None)
 
-    transType = ['DCT', 'NDCT', 'FFT']
+    trans = ['DCT', 'NDCT', 'FFT']
 
     t0 = time.time()
 
     instDCT = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30, transType=trans[0])
-    depthDCT, dataDCT, diffLenDCT, PeaksDCT, TsDCT, patsDCT = inst.BackDiffused_constraints()
+    depthDCT, dataDCT, diffLenDCT, PeaksDCT, TsDCT, patsDCT = instDCT.BackDiffused_constraints()
     t1 = time.time()
 
     totalDCT = t1-t0
@@ -179,7 +186,7 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
 
     t0 = time.time()
     instNDCT = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30, transType=trans[1])
-    depthNDCT, dataNDCT, diffLenNDCT, PeaksNDCT, TsNDCT, patsNDCT = inst.BackDiffused_constraints()
+    depthNDCT, dataNDCT, diffLenNDCT, PeaksNDCT, TsNDCT, patsNDCT = instNDCT.BackDiffused_constraints()
     t1 = time.time()
 
     totalNDCT = t1-t0
@@ -187,7 +194,7 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
 
     t0 = time.time()
     instFFT = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30, transType=trans[2])
-    depthFFT, dataFFT, diffLenFFT, PeaksFFT, TsFFT, patsFFT = inst.BackDiffused_constraints()
+    depthFFT, dataFFT, diffLenFFT, PeaksFFT, TsFFT, patsFFT = instFFT.BackDiffused_constraints()
     t1 = time.time()
 
     totalFFT = t1-t0
@@ -197,23 +204,23 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
 
 
 
+pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
 
-
-sites = ['SiteA']#, 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 print('\t\t####################################')
 print('\t\t### SPECTRAL TRANSFORMS EFFECTS ####')
 print('\t\t###### 1 MONTH VARIATION ONLY ######')
 print('\t\t####################################')
 
 
-for i in range(len(sites)):
-    site = sites[i]
+for j in range(len(sites)):
+    site = sites[j]
     print('\n##########'+site+'##########\n')
     N_InInt = 33
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
-    N = 10
+    N = 50
     nMonths_in = 1
     dTambs = np.zeros(N)
     dLakis = np.zeros(N)
@@ -227,6 +234,6 @@ for i in range(len(sites)):
 
     for i in range(N):
         print(i)
-        dTambs[i], dLakis[i], diffLenDCTs[i], diffLenNDCTs[i], diffLenFFTs[i], totalDCTs[i], totalNDCTs[i], totalFFTs[i] = Calc_diffLen_spectralTransform(site, N_InInt, CoresSpecs, Nmonths=Nmonths_in)
+        dTambs[i], dLakis[i], diffLenDCTs[i], diffLenNDCTs[i], diffLenFFTs[i], totalDCTs[i], totalNDCTs[i], totalFFTs[i] = Calc_diffLen_spectralTransform(site, N_InInt, CoresSpecs, Nmonths=nMonths_in)
 
     np.savetxt(pathResults + site+'_diffLens_SpecTransEffect_wTiming.csv', np.array([dTambs,dLakis, diffLenDCTs, diffLenNDCTs, diffLenFFTs, totalDCTs, totalNDCTs, totalFFTs]))

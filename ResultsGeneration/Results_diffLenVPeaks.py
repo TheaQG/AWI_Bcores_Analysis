@@ -47,9 +47,11 @@ from SignalAttenuation import Attenuation, AnnualLayerThick
     - N peaks v. sigma
         - Pattern/No pattern
 """
-sites = ['SiteA']#, 'SiteB', 'SiteD', 'SiteE', 'SiteG']
-diffLens = np.linspace(0.01,0.15,200)
-
+pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
+sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+diffLens = np.linspace(0.01,0.15,100)
+shift_in = 1.5
+lSecs_in = 7
 
 for i in range(len(sites)):
 
@@ -85,6 +87,12 @@ for i in range(len(sites)):
     depth_LT = data_d18O_LT['depth']
     d18O_LT = data_d18O_LT['d18O']
 
+    isoData = data_d18O
+    def avg(a):
+        return a[a > 0].mean()
+    def std(a):
+        return a[a>0].std()
+
     try:
         pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
         data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(int(shift_in))+'_lSecs_'+str(lSecs_in)+'.csv')
@@ -112,10 +120,10 @@ for i in range(len(sites)):
         d18O_ALT = np.asarray(isoData['d18O'])
 
             # Create annual layer thickness instance
-        inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+        inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs_in)
             # Compute ALT for entire core.
         fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
-        lks_LT = ls[(vals_use>=self.depthMin)&(vals_use<=self.depthMax)]
+        lks_LT = ls[(vals_use>=dTamb)&(vals_use<=dLaki)]
 
         l_LT = avg(lks_LT)
         lStd_LT = std(lks_LT)
@@ -144,4 +152,4 @@ for i in range(len(sites)):
         N_Ps[i] = len(Ps)
 
 
-    np.savetxt('ResultsData/'+site+'diffLensVNpeaks_constrained.csv', np.array([diffLens,N_Ps,N_Ts,patterns]))
+    np.savetxt(pathResults+site+'diffLensVNpeaks_constrainedTest.csv', np.array([diffLens,N_Ps,N_Ts,patterns]))

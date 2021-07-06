@@ -874,7 +874,7 @@ class BackDiffuse():
     def BackDiffuse_manuel_constrained(self, sigma, ALT_LT_in, shift_in=1.5, lSecs_in = 7,
                                         acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, N=2000,
                                         print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0,
-                                        diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+                                        diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True, ):
         diffLen = sigma
         dInt, d18OInt, Delta = self.interpCores()
 

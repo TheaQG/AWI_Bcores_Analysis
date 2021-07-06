@@ -342,6 +342,11 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
     depth_ECM_LT = np.asarray(data_ECM_LT['depth']); ECM_LT = np.asarray(data_ECM_LT['ECM'])
 
     lenLT = dLaki_in - dTamb_in
+    isoData = data_d18O
+    def avg(a):
+        return a[a > 0].mean()
+    def std(a):
+        return a[a>0].std()
 
     try:
         pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
@@ -481,7 +486,7 @@ def Calc_diffLen_Gauss_1const(site_in, N_InInt, CoresSpecs, eruption='Laki'):
         randLaki = np.random.normal(dLaki_in, lenLaki/5)
         dLaki = randLaki
         dTamb = dLaki - lenLT
-    elif eruption = 'Tambora':
+    elif eruption == 'Tambora':
         lenTamb = CoreSpecs['lenTambCor']/100
         startTamb = dTamb_in - lenTamb/2; endTamb = dTamb_in + lenTamb/2
         maxTamb = lenTamb/2
@@ -557,22 +562,22 @@ def Calc_diffLen_Gauss_1const(site_in, N_InInt, CoresSpecs, eruption='Laki'):
 
 
 
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
-
-for i in range(len(sites)):
-    site = sites[i]
-    print('\n##########'+site+'##########\n')
-    N_InInt = 33
-
-    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
-
-    N = 500
-    diffLens = np.zeros(N)
-    dTambs = np.zeros(N)
-    dLakis = np.zeros(N)
-
-    for i in range(N):
-        print(i)
-        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
-
-    np.savetxt(site+'diffLens_GaussDistwDepths.csv', np.array([diffLens,dTambs,dLakis]))
+# sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+#
+# for i in range(len(sites)):
+#     site = sites[i]
+#     print('\n##########'+site+'##########\n')
+#     N_InInt = 33
+#
+#     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+#
+#     N = 500
+#     diffLens = np.zeros(N)
+#     dTambs = np.zeros(N)
+#     dLakis = np.zeros(N)
+#
+#     for i in range(N):
+#         print(i)
+#         diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
+#
+#     np.savetxt(site+'diffLens_GaussDistwDepths.csv', np.array([diffLens,dTambs,dLakis]))

@@ -49,7 +49,7 @@ from DiffLen_UncertaintyEst import Calc_diffLen_Gauss, Calc_diffLen_Gauss_1const
 """
     - Location distributions
 """
-sites = ['SiteA']#, 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
 
 # print('\t\t####################################')
@@ -85,7 +85,7 @@ for i in range(len(sites)):
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
-    N = 10
+    N = 500
     diffLens = np.zeros(N)
     dTambs = np.zeros(N)
     dLakis = np.zeros(N)
@@ -112,7 +112,7 @@ for i in range(len(sites)):
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
-    N = 10
+    N = 500
     diffLens = np.zeros(N)
     dTambs = np.zeros(N)
     dLakis = np.zeros(N)
@@ -142,7 +142,7 @@ for i in range(len(sites)):
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
-    N = 10
+    N = 500
 
     diffLens = np.zeros(N)
     dTambs = np.zeros(N)
