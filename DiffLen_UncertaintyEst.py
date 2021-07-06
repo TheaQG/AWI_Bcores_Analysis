@@ -17,6 +17,7 @@ from scipy import integrate
 from scipy.fft import dct
 from scipy import signal
 from GetCoreData_fct import GetCoreData
+from SignalAttenuation import Attenuation, AnnualLayerThick
 
 from Decon import SpectralDecon
 from BackDiffuse_LT import BackDiffuse
@@ -291,9 +292,100 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
     dens_LT = dens[(depthDens >= dTamb) & (depthDens <= dLaki)]
 
 
+    data_dens_LT = pd.DataFrame({'depth': depthDens_LT, 'HLmodel': dens_LT})
+    data_diff_LT = pd.DataFrame({'Depth': depthDiff_LT, 'sigma_o18': diff_LT})
+
+
+        # Compute diffusion length estimate:
+    dataAll = pd.DataFrame({'depth':depth,'d18O':d18O}, index=None)
+
+    inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
+
+    depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints()
+
+    #dataAll = pd.DataFrame({'depth':depth_LT,'d18O':d18O_LT}, index=None)
+
+    #inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
+
+    #depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
+
+    return diffLen, dTamb, dLaki
+
+
+def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_in = 1.5, Nmonths = 2):
+    site = site_in
+        # Get Laki and Tambora positions along with other core specs.
+    coreNames = CoresSpecs['CoreName']
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+    dTamb_in = CoreSpecs['dTambCor']
+    dLaki_in = CoreSpecs['dLakiCor']
+    accum0 = CoreSpecs['Accum0']
+    accumIE = CoreSpecs['Accum1']
+    Temp0 = CoreSpecs['T0']
+
+    DataAll = GetCoreData(site, 'Alphabet')
+
+    data_d18O = DataAll[0]; data_d18O_LT = DataAll[1]
+    data_ECM = DataAll[2]; data_ECM_LT = DataAll[3]
+    data_dens = DataAll[4]; data_dens_LT = DataAll[5]
+    data_diff = DataAll[6]; data_diff_LT = DataAll[7]
+
+
+    depth = data_d18O['depth']
+    d18O = data_d18O['d18O']
+
+    depth_LT = data_d18O_LT['depth']
+    d18O_LT = data_d18O_LT['d18O']
+
+    depth_ECM = np.asarray(data_ECM['depth']); ECM = np.asarray(data_ECM['ECM'])
+    depth_ECM_LT = np.asarray(data_ECM_LT['depth']); ECM_LT = np.asarray(data_ECM_LT['ECM'])
+
+    lenLT = dLaki_in - dTamb_in
+
+    try:
+        pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
+        data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(int(1.5))+'_lSecs_'+str(7)+'.csv')
+        print('ALT file exists. Loading ALT data.')
+
+
+        lDCT = np.asarray(data['lDCT']);lNDCT = np.asarray(data['lNDCT']);lFFT = np.asarray(data['lFFT']);
+        vals_use = data['depth']
+
+        lks = np.c_[lDCT,lNDCT,lFFT]
+        lks_LT = lks[(vals_use>=dTamb_in)&(vals_use<=dLaki_in)]
+
+        l_LT = avg(lks_LT)
+        lStd_LT = std(lks_LT)
+
+        # Otherwise compute ALTs
+    except:
+        print('ALT file does NOT exist. Computing ALT for core.')
+
+        depth_ALT = np.asarray(isoData['depth'])
+        d18O_ALT = np.asarray(isoData['d18O'])
+
+            # Create annual layer thickness instance
+        inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+            # Compute ALT for entire core.
+        fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+        lks_LT = ls[(vals_use>=dTamb_in)&(vals_use<=dLaki_in)]
+
+        l_LT = avg(lks_LT)
+        lStd_LT = std(lks_LT)
+            # Compute an estimate for ALT at LT depth
+        #l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+
+    MLT_LT = l_LT/(12/Nmonths)
 
 
 
+
+
+
+    randTamb = np.random.normal(dTamb_in, MLT_LT)
+    dTamb = randTamb
+    dLaki = dTamb + lenLT
 
 
     DataAll = GetCoreData(site, 'Alphabet')
@@ -336,7 +428,7 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
 
     inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
 
-    depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints(LayerThickness=0, N_summers=0, N_winters=0, Amplitude=0, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True)
+    depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints()
 
     #dataAll = pd.DataFrame({'depth':depth_LT,'d18O':d18O_LT}, index=None)
 
@@ -345,6 +437,123 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
     #depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
 
     return diffLen, dTamb, dLaki
+
+
+
+
+
+def Calc_diffLen_Gauss_1const(site_in, N_InInt, CoresSpecs, eruption='Laki'):
+    site = site_in
+        # Get Laki and Tambora positions along with other core specs.
+    coreNames = CoresSpecs['CoreName']
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+    dTamb_in = CoreSpecs['dTambCor']
+    dLaki_in = CoreSpecs['dLakiCor']
+    accum0 = CoreSpecs['Accum0']
+    accumIE = CoreSpecs['Accum1']
+    Temp0 = CoreSpecs['T0']
+
+    DataAll = GetCoreData(site, 'Alphabet')
+
+    data_d18O = DataAll[0]; data_d18O_LT = DataAll[1]
+    data_ECM = DataAll[2]; data_ECM_LT = DataAll[3]
+    data_dens = DataAll[4]; data_dens_LT = DataAll[5]
+    data_diff = DataAll[6]; data_diff_LT = DataAll[7]
+
+
+    depth = data_d18O['depth']
+    d18O = data_d18O['d18O']
+
+    depth_LT = data_d18O_LT['depth']
+    d18O_LT = data_d18O_LT['d18O']
+
+    depth_ECM = np.asarray(data_ECM['depth']); ECM = np.asarray(data_ECM['ECM'])
+    depth_ECM_LT = np.asarray(data_ECM_LT['depth']); ECM_LT = np.asarray(data_ECM_LT['ECM'])
+
+    lenLT = dLaki_in - dTamb_in
+
+
+    if eruption == 'Laki':
+        lenLaki = CoreSpecs['lenLakiCor']/100
+        startLaki = dLaki_in - lenLaki/2; endLaki = dLaki_in + lenLaki/2
+        maxLaki = lenLaki/2
+        randLaki = np.random.normal(dLaki_in, lenLaki/5)
+        dLaki = randLaki
+        dTamb = dLaki - lenLT
+    elif eruption = 'Tambora':
+        lenTamb = CoreSpecs['lenTambCor']/100
+        startTamb = dTamb_in - lenTamb/2; endTamb = dTamb_in + lenTamb/2
+        maxTamb = lenTamb/2
+        randTamb = np.random.normal(dTamb_in, lenTamb/4)
+        dTamb = randTamb
+        dLaki = dTamb + lenLT
+
+        # Define Laki and Tambora location and eruption width
+
+        # Define new 'random' (uniform) estimate of Laki and Tambora positions, within peak width
+
+        # Define new sets of data in new LT_rand interval
+
+    DataAll = GetCoreData(site, 'Alphabet')
+
+    data_d18O = DataAll[0]
+    data_ECM = DataAll[2]
+    data_dens = DataAll[4]
+    data_diff = DataAll[6]
+
+
+    depth = data_d18O['depth']
+    d18O = data_d18O['d18O']
+
+    depth_LT = depth[(depth >= dTamb) & (depth <= dLaki)]
+    d18O_LT = d18O[(depth >= dTamb) & (depth <= dLaki)]
+
+
+
+    depthDiff = data_diff['Depth']
+    diff = data_diff['sigma_o18']
+
+    depthDiff_LT = depthDiff[(depthDiff >= dTamb) & (depthDiff <= dLaki)]
+    diff_LT = diff[(depthDiff >= dTamb) & (depthDiff <= dLaki)]
+
+
+
+    depthDens = data_dens['depth']
+    dens = data_dens['HLmodel']
+
+    depthDens_LT = depthDens[(depthDens >= dTamb) & (depthDens <= dLaki)]
+    dens_LT = dens[(depthDens >= dTamb) & (depthDens <= dLaki)]
+
+
+    data_dens_LT = pd.DataFrame({'depth': depthDens_LT, 'HLmodel': dens_LT})
+    data_diff_LT = pd.DataFrame({'Depth': depthDiff_LT, 'sigma_o18': diff_LT})
+
+
+        # Compute diffusion length estimate:
+    dataAll = pd.DataFrame({'depth':depth,'d18O':d18O}, index=None)
+
+    inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
+
+    depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints()
+
+    #dataAll = pd.DataFrame({'depth':depth_LT,'d18O':d18O_LT}, index=None)
+
+    #inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
+
+    #depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
+
+    return diffLen, dTamb, dLaki
+
+
+
+
+
+
+
+
+
+
 
 
 

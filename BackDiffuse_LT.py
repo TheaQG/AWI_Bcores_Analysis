@@ -69,7 +69,8 @@ class BackDiffuse():
                     on the measured delta values and a slope, a holocene temperature
                     estimate and a holocene delta estimate.
     '''
-    def __init__(self, coreName, d18OData, coreSpecs, depthMin, depthMax, ysInSec, interpAll = False, diffDensData_in = True, diffLenData = None, densData = None, Dist=3, transType='DCT'):
+    def __init__(self, coreName, d18OData, coreSpecs, depthMin, depthMax, ysInSec, interpAll = False,
+                diffDensData_in = True, diffLenData = None, densData = None, Dist=3, transType='DCT'):
         '''
             Initialize the class instance.
 
@@ -432,7 +433,7 @@ class BackDiffuse():
                 # If wanted, print the current diffusion length and the corresponding peaks counted
             if print_Npeaks:
                 print(f'N peaks: {len(idxPeak)}')
-                print(f'sigma: {diffLen*100}:.2f')
+                print(f'sigma: {diffLen*100:.2f}')
 
                 # If the number of counted peaks is larger than the number of years in the section,
                 # then subtract a small amount from the diffusion length estimate.
@@ -514,7 +515,7 @@ class BackDiffuse():
                 # If wanted, print the current diffusion length and the corresponding peaks counted
             if print_Npeaks:
                 print(f'N peaks: {len(idxPeak)}')
-                print(f'sigma: {diffLen*100}:.2f')
+                print(f'sigma: {diffLen*100:.2f}')
 
                 # Add a small positive perturbation to the diffusion length estimate.
             diffLen += 0.0001
@@ -590,7 +591,10 @@ class BackDiffuse():
 
         return depthEst, dataEst, diffLenFin, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
-    def BackDiffused_constraints(self, sigDel0_in = 0.03, lSecs_in = 5, shift_in=50, acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, epsilon_in = 1e-10, kmax_in = 50, N_sigs_in = 5, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+    def BackDiffused_constraints(self, sigDel0_in = 0.03, lSecs_in = 7, shift_in=1.5, acceptPct_dist_in = 2/4,
+                                acceptPct_prom_in = 2/4, epsilon_in = 1e-10, kmax_in = 50, N_sigs_in = 5, N=2000,
+                                print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1,
+                                interpAfterDecon=True, newDelta=0, interpBFDecon=True, ALTinput=False, l_LT_in=0):
         '''
             Method to compute the maximal diffusion length that still give ysInSec
             peaks.
@@ -634,33 +638,53 @@ class BackDiffuse():
 
             # Set entire core data (depth and d18O) as separate np-arrays
         isoData = self.d18OData
+        def avg(a):
+            return a[a > 0].mean()
+        def std(a):
+            return a[a>0].std()
 
 
-            # If file with ALTs already exists, then load data from file.
-        try:
-            print('ALT file exists. Loading ALT data.')
-            site = self.coreName
-            pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
-            data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(shift_in)+'.csv')
+        if ALTinput:
+            l_LT = l_LT_in
+        else:
+                # If file with ALTs already exists, then load data from file.
+            try:
+                site = self.coreName
+                pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
+                data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(int(shift_in))+'_lSecs_'+str(lSecs_in)+'.csv')
+                print('ALT file exists. Loading ALT data.')
 
-            lMean = data['lMean']
-            lStd = data['lStd']
-            vals_use = data['depth']
 
-            # Otherwise compute ALTs
-        except:
-            print('ALT file does NOT exist. Computing ALT for core.')
+                lDCT = np.asarray(data['lDCT']);lNDCT = np.asarray(data['lNDCT']);lFFT = np.asarray(data['lFFT']);
+                vals_use = data['depth']
 
-            depth_ALT = np.asarray(isoData['depth'])
-            d18O_ALT = np.asarray(isoData['d18O'])
+                lks = np.c_[lDCT,lNDCT,lFFT]
+                lks_LT = lks[(vals_use>=self.depthMin)&(vals_use<=self.depthMax)]
 
-                # Create annual layer thickness instance
-            inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
-                # Compute ALT for entire core.
-            fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+                l_LT = avg(lks_LT)
+                lStd_LT = std(lks_LT)
 
-            # Compute an estimate for ALT at LT depth
-        l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+                lMean = data['lMean']
+                lStd = data['lStd']
+                vals_use = data['depth']
+
+                # Otherwise compute ALTs
+            except:
+                print('ALT file does NOT exist. Computing ALT for core.')
+
+                depth_ALT = np.asarray(isoData['depth'])
+                d18O_ALT = np.asarray(isoData['d18O'])
+
+                    # Create annual layer thickness instance
+                inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+                    # Compute ALT for entire core.
+                fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+                lks_LT = ls[(vals_use>=self.depthMin)&(vals_use<=self.depthMax)]
+
+                l_LT = avg(lks_LT)
+                lStd_LT = std(lks_LT)
+                    # Compute an estimate for ALT at LT depth
+                #l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
 
         ALT_LT = l_LT
 
@@ -847,7 +871,10 @@ class BackDiffuse():
 
         return newDepth, newData, diffLenFin, newPs, newTs, newPattern#, idxPeak, arr_diffLens, arr_Npeaks, arr_depth, arr_data
 
-    def BackDiffuse_manuel_constrained(self, sigma, ALT_LT_in, shift_in=50, lSecs_in = 5, acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, N=2000, print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0, diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
+    def BackDiffuse_manuel_constrained(self, sigma, ALT_LT_in, shift_in=1.5, lSecs_in = 7,
+                                        acceptPct_dist_in = 2/4, acceptPct_prom_in = 2/4, N=2000,
+                                        print_Npeaks=True, theoDiffLen=True, diffLenStart_In=0,
+                                        diffLenEnd_In=0.1, interpAfterDecon=True, newDelta=0, interpBFDecon=True):
         diffLen = sigma
         dInt, d18OInt, Delta = self.interpCores()
 

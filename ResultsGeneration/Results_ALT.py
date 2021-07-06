@@ -56,7 +56,8 @@ from SignalAttenuation import Attenuation, AnnualLayerThick
     - Annual Layer Thicknes
 """
 sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
-shiftIn = 50
+shiftIn = 1.5
+lSecsIn = 7
 for i in range(len(sites)):
     site = sites[i]
 
@@ -77,11 +78,11 @@ for i in range(len(sites)):
     depth = np.asarray(data_d18O['depth'])
     d18O = np.asarray(data_d18O['d18O'])
 
-    ALT_inst = AnnualLayerThick(depth, d18O, 5)
+    ALT_inst = AnnualLayerThick(depth, d18O, lSecsIn)
     fks, ls, lMean, lStd, secs = ALT_inst.ALT_fullCore_seq(shift=shiftIn, printItes=False)
 
     l_LT = np.mean(lMean[(secs > dTamb) & (secs < dLaki)])
 
     allData = np.c_[fks,ls,lMean,lStd,secs]
 
-    np.savetxt('ResultsData/'+site+'_ALT_FullCore_Pshift_'+str(shiftIn)+'.csv', allData, delimiter=",", header="fDCT,fNDCT,fFFT,lDCT,lNDCT,lFFT,lMean,lStd,depth", comments='')
+    np.savetxt('ResultsData/'+site+'_ALT_FullCore_Pshift_'+str(int(shiftIn))+'_lSecs_'+str(lSecsIn)+'.csv', allData, delimiter=",", header="fDCT,fNDCT,fFFT,lDCT,lNDCT,lFFT,lMean,lStd,depth", comments='')

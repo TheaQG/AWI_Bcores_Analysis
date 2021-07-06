@@ -47,7 +47,7 @@ from SignalAttenuation import Attenuation, AnnualLayerThick
     - N peaks v. sigma
         - Pattern/No pattern
 """
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['SiteA']#, 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 diffLens = np.linspace(0.01,0.15,200)
 
 
@@ -85,13 +85,43 @@ for i in range(len(sites)):
     depth_LT = data_d18O_LT['depth']
     d18O_LT = data_d18O_LT['d18O']
 
+    try:
+        pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
+        data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(int(shift_in))+'_lSecs_'+str(lSecs_in)+'.csv')
+        print('ALT file exists. Loading ALT data.')
 
-        # Create annual layer thickness instance
-    inst_ALT = AnnualLayerThick(np.asarray(depth), np.asarray(d18O), 5)
-        # Compute ALT for entire core.
-    fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=50, printItes=False)
-        # Compute an estimate for ALT at LT depth
-    l_LT = np.mean(lMean[(vals_use > dTamb) & (vals_use < dLaki)])
+
+        lDCT = np.asarray(data['lDCT']);lNDCT = np.asarray(data['lNDCT']);lFFT = np.asarray(data['lFFT']);
+        vals_use = data['depth']
+
+        lks = np.c_[lDCT,lNDCT,lFFT]
+        lks_LT = lks[(vals_use>=dTamb)&(vals_use<=dLaki)]
+
+        l_LT = avg(lks_LT)
+        lStd_LT = std(lks_LT)
+
+        lMean = data['lMean']
+        lStd = data['lStd']
+        vals_use = data['depth']
+
+        # Otherwise compute ALTs
+    except:
+        print('ALT file does NOT exist. Computing ALT for core.')
+
+        depth_ALT = np.asarray(isoData['depth'])
+        d18O_ALT = np.asarray(isoData['d18O'])
+
+            # Create annual layer thickness instance
+        inst_ALT = AnnualLayerThick(depth_ALT, d18O_ALT, lSecs)
+            # Compute ALT for entire core.
+        fksMax, ls, lMean, lStd, vals_use = inst_ALT.ALT_fullCore_seq(shift=shift_in, printItes=False)
+        lks_LT = ls[(vals_use>=self.depthMin)&(vals_use<=self.depthMax)]
+
+        l_LT = avg(lks_LT)
+        lStd_LT = std(lks_LT)
+            # Compute an estimate for ALT at LT depth
+        #l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
+
     ALT_LT = l_LT
 
 
