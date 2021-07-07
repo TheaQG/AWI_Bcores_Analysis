@@ -193,7 +193,7 @@ def Calc_diffLen_RandLT(site_in, N_InInt, CoresSpecs):
 
 
 
-def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
+def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs, section = 'LT', mu1 = 0, mu2 = 0, sig1 = 1, sig2 = 1):
     site = site_in
         # Get Laki and Tambora positions along with other core specs.
     coreNames = CoresSpecs['CoreName']
@@ -252,8 +252,12 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs):
     maxTamb = lenTamb/2
     maxLaki = lenLaki/2
 
-    randTamb = np.random.normal(dTamb_in, lenTamb/4)
-    randLaki = np.random.normal(dLaki_in, lenLaki/5)
+    if section == 'LT':
+        randTamb = np.random.normal(dTamb_in, lenTamb/4)
+        randLaki = np.random.normal(dLaki_in, lenLaki/5)
+    else:
+        randTamb = np.random.normal(mu1, sig1)
+        randLaki = np.random.normal(mu2,sig2)
 
     dTamb = randTamb
     dLaki = randLaki
@@ -381,7 +385,7 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
             # Compute an estimate for ALT at LT depth
         #l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
 
-    MLT_LT = l_LT/(12/Nmonths)
+    MLT_LT = l_LT/(12/Nmonths) / 2
 
 
 
@@ -389,8 +393,10 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
 
 
     randTamb = np.random.normal(dTamb_in, MLT_LT)
+    randLaki = np.random.normal(dLaki_in, MLT_LT)
+
     dTamb = randTamb
-    dLaki = dTamb + lenLT
+    dLaki = randLaki
 
 
     DataAll = GetCoreData(site, 'Alphabet')

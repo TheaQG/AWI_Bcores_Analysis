@@ -131,8 +131,9 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
 
 
     randTamb = np.random.normal(dTamb_in, MLT_LT)
+    randLaki = np.random.normal(dTamb_in, MLT_LT)
     dTamb = randTamb
-    dLaki = dTamb + lenLT
+    dLaki = randLaki
 
 
     DataAll = GetCoreData(site, 'Alphabet')
@@ -220,7 +221,7 @@ for j in range(len(sites)):
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
 
-    N = 50
+    N = 200
     nMonths_in = 1
     dTambs = np.zeros(N)
     dLakis = np.zeros(N)
@@ -236,4 +237,4 @@ for j in range(len(sites)):
         print(i)
         dTambs[i], dLakis[i], diffLenDCTs[i], diffLenNDCTs[i], diffLenFFTs[i], totalDCTs[i], totalNDCTs[i], totalFFTs[i] = Calc_diffLen_spectralTransform(site, N_InInt, CoresSpecs, Nmonths=nMonths_in)
 
-    np.savetxt(pathResults + site+'_diffLens_SpecTransEffect_wTiming.csv', np.array([dTambs,dLakis, diffLenDCTs, diffLenNDCTs, diffLenFFTs, totalDCTs, totalNDCTs, totalFFTs]))
+    np.savetxt(pathResults + site+'_diffLens_SpecTransEffect_wTiming_varyLandT.csv', np.array([dTambs,dLakis, diffLenDCTs, diffLenNDCTs, diffLenFFTs, totalDCTs, totalNDCTs, totalFFTs]))
