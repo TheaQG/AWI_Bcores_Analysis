@@ -131,7 +131,7 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
 
 
     randTamb = np.random.normal(dTamb_in, MLT_LT)
-    randLaki = np.random.normal(dTamb_in, MLT_LT)
+    randLaki = np.random.normal(dLaki_in, MLT_LT)
     dTamb = randTamb
     dLaki = randLaki
 

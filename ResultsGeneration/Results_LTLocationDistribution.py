@@ -84,7 +84,7 @@ pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
 #     N_InInt = 33
 #
 #     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
-# 
+#
 #     N = 500
 #     diffLens = np.zeros(N)
 #     dTambs = np.zeros(N)
@@ -150,6 +150,6 @@ for i in range(len(sites)):
 
     for i in range(N):
         print(i)
-        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss_MonthVar(site, N_InInt, CoresSpecs, Nmonths=2)
+        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss_MonthVar(site, N_InInt, CoresSpecs, Nmonths=2, transType_in='NDCT')
 
-    np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths_sigNmonths2.csv', np.array([diffLens,dTambs,dLakis]))
+    np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths_sigNmonths2_NDCT2.csv', np.array([diffLens,dTambs,dLakis]))

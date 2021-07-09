@@ -316,7 +316,7 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs, section = 'LT', mu1 = 0, mu
     return diffLen, dTamb, dLaki
 
 
-def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_in = 1.5, Nmonths = 2):
+def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_in = 1.5, Nmonths = 2, transType_in='DCT'):
     site = site_in
         # Get Laki and Tambora positions along with other core specs.
     coreNames = CoresSpecs['CoreName']
@@ -385,7 +385,7 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
             # Compute an estimate for ALT at LT depth
         #l_LT = np.mean(lMean[(vals_use > self.depthMin) & (vals_use < self.depthMax)])
 
-    MLT_LT = l_LT/(12/Nmonths) / 2
+    MLT_LT = (l_LT/(12/Nmonths)) / 2
 
 
 
@@ -437,7 +437,7 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
         # Compute diffusion length estimate:
     dataAll = pd.DataFrame({'depth':depth,'d18O':d18O}, index=None)
 
-    inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30)
+    inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30, transType=transType_in)
 
     depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints()
 
