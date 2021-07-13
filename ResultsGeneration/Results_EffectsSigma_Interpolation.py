@@ -65,8 +65,8 @@ print('\t\t### INTERPOLATION AF/BF EFFECTS ####')
 print('\t\t###### INTERPOLATION BF DECON ######')
 print('\t\t####################################')
 
-deltaMins = [0.015,0.015,0.015,0.015,0.015]
-deltaMaxs = [0.1,0.1,0.12,0.1,0.09]
+deltaMins = [0.01,0.01,0.01,0.01,0.01]
+deltaMaxs = [0.12,0.12,0.12,0.12,0.12]
 
 interpType = 'CubicSpline'
 
@@ -130,11 +130,20 @@ for j in range(len(sites)):
         dataAll = pd.DataFrame({'depth':depth_LT_int1,'d18O':d18O_LT_int1}, index=None)
 
         inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT)
-        depth1, data, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints(interpAfterDecon=False)
+#        depth1, data, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints(interpAfterDecon=False)
 #        depth1, data, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=False, newDelta=0.005)
 
-        Npeaks[i] = len(Peaks)
-        diffLens[i] = diffLen
+
+
+        try:
+            depth1, data, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints(interpAfterDecon=False)
+                #        depths.append(depth1)
+                #        datas.append(data)
+            diffLens[i] = diffLen
+
+        except:
+            print('Error. Moving on to next delta')
+            diffLens[i] = -1
         #depths_BD.append(depth1)
         #datas_BD.append(data)
 
