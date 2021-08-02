@@ -16,6 +16,7 @@ from scipy import linalg
 from scipy import integrate
 from scipy.fft import dct
 from scipy import signal
+import time 
 from GetCoreData_fct import GetCoreData
 from SignalAttenuation import Attenuation, AnnualLayerThick
 
@@ -316,7 +317,7 @@ def Calc_diffLen_Gauss(site_in, N_InInt, CoresSpecs, section = 'LT', mu1 = 0, mu
     return diffLen, dTamb, dLaki
 
 
-def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_in = 1.5, Nmonths = 2, transType_in='DCT'):
+def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_in = 1.5, Nmonths = 2, transType_in='DCT', constraints = True, timeIt=False):
     site = site_in
         # Get Laki and Tambora positions along with other core specs.
     coreNames = CoresSpecs['CoreName']
@@ -439,7 +440,26 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
 
     inst = BackDiffuse(site, dataAll, CoresSpecs, dTamb, dLaki, N_InInt, diffLenData=data_diff_LT[['Depth','sigma_o18']], densData=data_dens_LT, Dist=30, transType=transType_in)
 
-    depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints()
+    if constraints:
+        if timeIt:
+            t0 = time.time()
+
+        depthOpt, dataOpt, diffLen, Peaks, Ts, pats = inst.BackDiffused_constraints()
+
+        if timeIt:
+            t1 = time.time()
+
+            t_tot = t1-t0
+    else:
+        if timeIt:
+            t0 = time.time()
+
+        depthOpt, dataOpt, diffLen, Peaks, arr_diffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(print_Npeaks=False)
+
+        if timeIt:
+            t1 = time.time()
+
+            t_tot = t1-t0
 
     #dataAll = pd.DataFrame({'depth':depth_LT,'d18O':d18O_LT}, index=None)
 
@@ -447,7 +467,10 @@ def Calc_diffLen_Gauss_MonthVar(site_in, N_InInt, CoresSpecs, lsecs = 7, shift_i
 
     #depthOpt, dataOpt, diffLen, peaks, arr_DiffLens, arr_Npeaks, arr_depth, arr_data = inst.backDiffused(theoDiffLen=True,print_Npeaks=False, diffLenStart_In=0.005, diffLenEnd_In=0.15, interpAfterDecon=True)
 
-    return diffLen, dTamb, dLaki
+    if timeIt:
+        return t_tot, diffLen, dTamb, dLaki
+    else:
+        return diffLen, dTamb, dLaki
 
 
 
