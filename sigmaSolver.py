@@ -46,7 +46,7 @@ class sigma_Solver():
 
         return sigma_model - sigma_data
 
-    def solveTemp(self, sigma_data = 0.08, accum = 0.18, P_atm = 0.7, rho_CO = np.array([804.3]),\
+    def solveTemp(self, Tmodel = 243.15, sigma_data = 0.08, accum = 0.18, P_atm = 0.7, rho_CO = np.array([804.3]),\
                 f0 = 1, f1 = 1, fractFact_18O = "Majoube", fractFact_D = "Merlivat", \
                 fractFact_17O = "Majoube", isotope = 2):
 
@@ -56,7 +56,7 @@ class sigma_Solver():
             Accumulation is in water equivalent, diffusion length is in ice equivalent.
         """
 
-        T_est = sp.optimize.newton(self.norm_function, 243.5, \
+        T_est = sp.optimize.newton(self.norm_function, Tmodel, \
                                     args = (accum, P_atm, rho_CO, f0, f1, fractFact_18O, \
                                             fractFact_D, fractFact_17O, sigma_data, isotope), \
                                     maxiter = 100)

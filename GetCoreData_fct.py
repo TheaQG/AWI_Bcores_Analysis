@@ -73,7 +73,7 @@ def GetCoreData(site_in, type_in='Alphabet'):
         if type_in == 'Alphabet':
             site_ECM = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetECM/'+ site + '_ECM.txt', ',')
         elif type_in == 'AWI_Bcores':
-            site_ECM =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/B_cores_AWI/BcoresECMDEP/'+ site + '_ECM.txt', '\t')
+            site_ECM =  pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/B_cores_AWI/BcoresECMDEP/DepthDEP__Clean__'+ site + '.txt', '\t')
     except:
         print('No ECM file found, setting empty df instead')
         site_ECM = pd.DataFrame(index=np.arange(0,1000),columns=['depth','ECM'])
@@ -91,6 +91,7 @@ def GetCoreData(site_in, type_in='Alphabet'):
         print('No density file found, setting empty df instead')
         site_Dens = pd.DataFrame(index=np.arange(0,1000),columns=['depth', 'dens', 'rhoMeas', 'HLmodel', 'HLmodelOpti'])
         site_Dens = site_Dens.fillna(0)
+
 
 
         # Load diffusion length data. If no file to be found, create empty data frame.
@@ -115,7 +116,10 @@ def GetCoreData(site_in, type_in='Alphabet'):
 
         # Define ECM data. Define btw. Laki and Tamb.
     depthECM = site_ECM['depth']
-    ECM = site_ECM['ECM']
+    if type_in == 'Alphabet':
+        ECM = site_ECM['ECM']
+    elif type_in == 'AWI_Bcores':
+        ECM = site_ECM['cond']
     depthECM_LT = depthECM[(depthECM >= dTamb) & (depthECM <= dLaki)]
     ECM_LT = ECM[(depthECM >= dTamb) & (depthECM <= dLaki)]
 
