@@ -732,7 +732,7 @@ class BackDiffuse():
 
             # Set the minimum peak distance as the accepted percentage of the ALT estimate
         min_peakDist = dist
-
+        print(min_peakDist)
             # Define the initial diff. len. perturbation as the inputted
         sigDel0 = sigDel0_in
 
