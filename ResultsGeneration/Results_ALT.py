@@ -55,8 +55,8 @@ from SignalAttenuation import Attenuation, AnnualLayerThick
 """
     - Annual Layer Thicknes
 """
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
-shiftIn = 1.5
+sites = ['Crete','SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+shiftIn = 4
 lSecsIn = 7
 for i in range(len(sites)):
     site = sites[i]

@@ -207,7 +207,7 @@ def Calc_diffLen_spectralTransform(site_in, N_InInt, CoresSpecs, Nmonths = 1):
 
 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
 
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['Crete']#['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 print('\t\t####################################')
 print('\t\t### SPECTRAL TRANSFORMS EFFECTS ####')
 print('\t\t###### 1 MONTH VARIATION ONLY ######')

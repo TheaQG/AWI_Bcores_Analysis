@@ -43,7 +43,7 @@ from sigmaSolver import sigma_Solver
 from SignalAttenuation import Attenuation, AnnualLayerThick
 
 
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['Crete']#['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 
 
 
@@ -56,72 +56,72 @@ sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 
 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
 
-#
-# for i in range(len(sites)):
-#     site = sites[i]
-#
-#     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
-#
-#     coreNames = CoresSpecs['CoreName']
-#
-#     print('\n\n\t####'+site+'####\n')
-#     core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
-#     CoreSpecs = CoresSpecs.iloc[core_idx]
-#     dTamb = CoreSpecs['dTamb']
-#     dLaki = CoreSpecs['dLaki']
-#
-#     DataAll = GetCoreData(site, 'Alphabet')
-#
-#     data_d18O = DataAll[0]; data_d18O_LT = DataAll[1]
-#
-#     depth = np.asarray(data_d18O['depth'])
-#     d18O = np.asarray(data_d18O['d18O'])
-#
-#     lsec = 5
-#     shifts = np.linspace(0.1,lsec,70)
-#
-#     l_shift = np.zeros(len(shifts))
-#     lStd_shift = np.zeros(len(shifts))
-#     dataAll = []
-#
-#     ALT_inst = AnnualLayerThick(depth, d18O, lsec)
-#
-#     for j in range(len(shifts)):
-#
-#         fks, ls, lMean, lStd, secs = ALT_inst.ALT_fullCore_seq(shift=shifts[j], printItes=True)
-#
-#         dataAll.append(np.asarray(secs))
-#         dataAll.append(np.asarray(lMean))
-#         dataAll.append(np.asarray(lStd))
-#
-#         fks_LT = fks[(secs >= dTamb) & (secs <= dLaki)]
-#         fks_LT_pos = fks_LT[fks_LT>0]
-#
-#         l_LT = np.mean(1/(fks_LT_pos))
-#         lStd_LT = np.std(1/(fks_LT_pos))
-#
-#         l_shift[j] = l_LT
-#         lStd_shift[j] = lStd_LT
-#
-#         print(f'ite {j}/{len(shifts)}. ALT at LT: {l_LT:.3f} +/- {lStd_LT:.3f}')
-#
-#     N = int(len(dataAll)/3)
-#
-#     elems = np.arange(0, N)
-#     reps = np.repeat(elems, 3)
-#     repsStr = np.asarray(list(map(str, reps)))
-#
-#     headerSolo = np.asarray(N*['secs','lMean','lStd'])
-#     header = np.char.add(headerSolo,repsStr)
-#
-#     df_dataAll = pd.DataFrame(dataAll, header).T
-#
-#
-#     df_dataAll.to_csv(pathResults+site+'_ALTvDepth_AllShifts.csv')
-#
-#
-#     np.savetxt(pathResults+site+'_ALTvShifts.csv',np.array([shifts,l_shift, lStd_shift]).T, delimiter=",", header = 'shifts,lMeans,lStds',comments='')
-#
+
+for i in range(len(sites)):
+    site = sites[i]
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    coreNames = CoresSpecs['CoreName']
+
+    print('\n\n\t####'+site+'####\n')
+    core_idx = coreNames[CoresSpecs['CoreName'] == site].index[0]
+    CoreSpecs = CoresSpecs.iloc[core_idx]
+    dTamb = CoreSpecs['dTamb']
+    dLaki = CoreSpecs['dLaki']
+
+    DataAll = GetCoreData(site, 'Alphabet')
+
+    data_d18O = DataAll[0]; data_d18O_LT = DataAll[1]
+
+    depth = np.asarray(data_d18O['depth'])
+    d18O = np.asarray(data_d18O['d18O'])
+
+    lsec = 5
+    shifts = np.linspace(0.1,lsec,70)
+
+    l_shift = np.zeros(len(shifts))
+    lStd_shift = np.zeros(len(shifts))
+    dataAll = []
+
+    ALT_inst = AnnualLayerThick(depth, d18O, lsec)
+
+    for j in range(len(shifts)):
+
+        fks, ls, lMean, lStd, secs = ALT_inst.ALT_fullCore_seq(shift=shifts[j], printItes=True)
+
+        dataAll.append(np.asarray(secs))
+        dataAll.append(np.asarray(lMean))
+        dataAll.append(np.asarray(lStd))
+
+        fks_LT = fks[(secs >= dTamb) & (secs <= dLaki)]
+        fks_LT_pos = fks_LT[fks_LT>0]
+
+        l_LT = np.mean(1/(fks_LT_pos))
+        lStd_LT = np.std(1/(fks_LT_pos))
+
+        l_shift[j] = l_LT
+        lStd_shift[j] = lStd_LT
+
+        print(f'ite {j}/{len(shifts)}. ALT at LT: {l_LT:.3f} +/- {lStd_LT:.3f}')
+
+    N = int(len(dataAll)/3)
+
+    elems = np.arange(0, N)
+    reps = np.repeat(elems, 3)
+    repsStr = np.asarray(list(map(str, reps)))
+
+    headerSolo = np.asarray(N*['secs','lMean','lStd'])
+    header = np.char.add(headerSolo,repsStr)
+
+    df_dataAll = pd.DataFrame(dataAll, header).T
+
+
+    df_dataAll.to_csv(pathResults+site+'_ALTvDepth_AllShifts.csv')
+
+
+    np.savetxt(pathResults+site+'_ALTvShifts.csv',np.array([shifts,l_shift, lStd_shift]).T, delimiter=",", header = 'shifts,lMeans,lStds',comments='')
+
 
 
 

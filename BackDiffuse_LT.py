@@ -652,7 +652,7 @@ class BackDiffuse():
             try:
                 site = self.coreName
                 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
-                data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(int(shift_in))+'_lSecs_'+str(lSecs_in)+'.csv')
+                data = pd.read_csv(pathResults + site + '_ALT_FullCore_Pshift_'+str(int(shift_in))+'_lSecs_'+str(int(lSecs_in))+'.csv')
                 print('ALT file exists. Loading ALT data.')
 
 
@@ -661,7 +661,7 @@ class BackDiffuse():
 
                 lks = np.c_[lDCT,lNDCT,lFFT]
                 lks_LT = lks[(vals_use>=self.depthMin)&(vals_use<=self.depthMax)]
-
+                
                 l_LT = avg(lks_LT)
                 lStd_LT = std(lks_LT)
 
@@ -691,6 +691,7 @@ class BackDiffuse():
 
 
             # If interpolation before deconvolution is wanted, then interpolate the isotope data
+
         if interpBFDecon:
             dInt, d18OInt, Delta = self.interpCores()
         else:

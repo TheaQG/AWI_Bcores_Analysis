@@ -243,7 +243,7 @@ def GetDensProfile(site_in, path_densMeas, delim_densMeas, path_isoMeas, delim_i
 # pathDens = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + '_DepthDens.txt'
 # pathOut = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/AlphabetDens/' + core + 'DepthDens_w_Models.txt'
 # pathIso = '/home/thea/Documents/KUFysik/MesterTesen/Data/datasets/Alphabet_cores/Alphabetd18O/'+core+'_det.txt'
-#
+# 
 # delimIso = ','
 # delimOut = '\t'
 # delimDens = '\t'

@@ -55,8 +55,9 @@ from DiffLen_UncertaintyEst import Calc_diffLen_Gauss_MonthVar
             - Qualitative analysis for visual inspection
 """
 #sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['Crete']
 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
-
+#
 # for i in range(len(sites)):
 #
 #     site = sites[i]
@@ -123,7 +124,7 @@ pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
         - Sigma estimate
             - Quantitative analysis w. uncertainties based on ALT estimate
 """
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+#sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 
 
 

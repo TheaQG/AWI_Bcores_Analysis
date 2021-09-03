@@ -49,82 +49,82 @@ from DiffLen_UncertaintyEst import Calc_diffLen_Gauss, Calc_diffLen_Gauss_1const
 """
     - Location distributions
 """
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['Crete']#['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
 
-# print('\t\t####################################')
-# print('\t\t### ESTIMATING DIFF LEN (GAUSS) ####')
-# print('\t\t##### VARIATION IN L & T BOTH ######')
-# print('\t\t####################################')
-# for i in range(len(sites)):
-#     site = sites[i]
-#     print('\n##########'+site+'##########\n')
-#     N_InInt = 33
-#
-#     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
-#
-#     N = 500
-#     diffLens = np.zeros(N)
-#     dTambs = np.zeros(N)
-#     dLakis = np.zeros(N)
-#
-#     for i in range(N):
-#         print(i)
-#         diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
-#
-#     np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths.csv', np.array([diffLens,dTambs,dLakis]))
+print('\t\t####################################')
+print('\t\t### ESTIMATING DIFF LEN (GAUSS) ####')
+print('\t\t##### VARIATION IN L & T BOTH ######')
+print('\t\t####################################')
+for i in range(len(sites)):
+    site = sites[i]
+    print('\n##########'+site+'##########\n')
+    N_InInt = 33
 
-# print('\t\t####################################')
-# print('\t\t### ESTIMATING DIFF LEN (GAUSS) ####')
-# print('\t\t###### VARIATION IN LAKI ONLY ######')
-# print('\t\t####################################')
-# for i in range(len(sites)):
-#     site = sites[i]
-#     print('\n##########'+site+'##########\n')
-#     N_InInt = 33
-#
-#     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
-#
-#     N = 500
-#     diffLens = np.zeros(N)
-#     dTambs = np.zeros(N)
-#     dLakis = np.zeros(N)
-#
-#     for i in range(N):
-#         print(i)
-#         diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss_1const(site, 33, CoresSpecs, eruption='Laki')
-#
-#     np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths_Laki.csv', np.array([diffLens,dTambs,dLakis]))
-#
-#
-#
-#
-#
-#
-# print('\t\t####################################')
-# print('\t\t### ESTIMATING DIFF LEN (GAUSS) ####')
-# print('\t\t###### VARIATION IN TAMB ONLY ######')
-# print('\t\t####################################')
-# for i in range(len(sites)):
-#     site = sites[i]
-#     print('\n##########'+site+'##########\n')
-#     N_InInt = 33
-#
-#     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
-#
-#     N = 500
-#     diffLens = np.zeros(N)
-#     dTambs = np.zeros(N)
-#     dLakis = np.zeros(N)
-#
-#     for i in range(N):
-#         print(i)
-#         diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss_1const(site, N_InInt, CoresSpecs, eruption='Tambora')
-#
-#     np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths_Tamb.csv', np.array([diffLens,dTambs,dLakis]))
-#
-#
-#
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    N = 500
+    diffLens = np.zeros(N)
+    dTambs = np.zeros(N)
+    dLakis = np.zeros(N)
+
+    for i in range(N):
+        print(i)
+        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss(site, 33, CoresSpecs)
+
+    np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths.csv', np.array([diffLens,dTambs,dLakis]))
+
+print('\t\t####################################')
+print('\t\t### ESTIMATING DIFF LEN (GAUSS) ####')
+print('\t\t###### VARIATION IN LAKI ONLY ######')
+print('\t\t####################################')
+for i in range(len(sites)):
+    site = sites[i]
+    print('\n##########'+site+'##########\n')
+    N_InInt = 33
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    N = 500
+    diffLens = np.zeros(N)
+    dTambs = np.zeros(N)
+    dLakis = np.zeros(N)
+
+    for i in range(N):
+        print(i)
+        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss_1const(site, 33, CoresSpecs, eruption='Laki')
+
+    np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths_Laki.csv', np.array([diffLens,dTambs,dLakis]))
+
+
+
+
+
+
+print('\t\t####################################')
+print('\t\t### ESTIMATING DIFF LEN (GAUSS) ####')
+print('\t\t###### VARIATION IN TAMB ONLY ######')
+print('\t\t####################################')
+for i in range(len(sites)):
+    site = sites[i]
+    print('\n##########'+site+'##########\n')
+    N_InInt = 33
+
+    CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
+
+    N = 500
+    diffLens = np.zeros(N)
+    dTambs = np.zeros(N)
+    dLakis = np.zeros(N)
+
+    for i in range(N):
+        print(i)
+        diffLens[i], dTambs[i], dLakis[i] = Calc_diffLen_Gauss_1const(site, N_InInt, CoresSpecs, eruption='Tambora')
+
+    np.savetxt(pathResults + site+'_diffLens_GaussDistwDepths_Tamb.csv', np.array([diffLens,dTambs,dLakis]))
+
+
+
 
 
 

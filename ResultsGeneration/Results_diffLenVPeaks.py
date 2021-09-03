@@ -48,7 +48,7 @@ from SignalAttenuation import Attenuation, AnnualLayerThick
         - Pattern/No pattern
 """
 pathResults = '/home/thea/MesterTesen/Analysis/ResultsGeneration/ResultsData/'
-sites = ['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
+sites = ['Crete']#['SiteA', 'SiteB', 'SiteD', 'SiteE', 'SiteG']
 diffLens = np.linspace(0.01,0.15,100)
 shift_in = 1.5
 lSecs_in = 7
@@ -152,4 +152,4 @@ for i in range(len(sites)):
         N_Ps[i] = len(Ps)
 
 
-    np.savetxt(pathResults+site+'diffLensVNpeaks_constrainedTest.csv', np.array([diffLens,N_Ps,N_Ts,patterns]))
+    np.savetxt(pathResults+site+'diffLensVNpeaks_constrained.csv', np.array([diffLens,N_Ps,N_Ts,patterns]))
