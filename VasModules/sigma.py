@@ -40,7 +40,7 @@ from scipy import stats
 import copy
 #sys.path.append("/Users/vasilis/vaspy")
 #sys.path.append("/home/vasileios")
-import diffusivity
+import src.diffusivity as diffusivity
 import herron_lang
 #plt.rc('text', usetex=True)
 #plt.rc('font', family='sans-serif', size = 10)

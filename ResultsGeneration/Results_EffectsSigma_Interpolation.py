@@ -22,7 +22,7 @@ import os
 sys.path.append('../../')
 sys.path.append('../')
 
-from Interpolation_Class import Interpolation
+from src.Interpolation_Class import Interpolation
 
 
 mpl.rcParams['text.usetex'] = True
@@ -35,15 +35,15 @@ mpl.rcParams['font.family'] = 'STIXGeneral'
 
 saveFigs = False
 
-from GetCoreData_fct import GetCoreData
-from BackDiffuse_LT import BackDiffuse
-from Interpolation_Class import Interpolation
-from HL_AnalyticThea_class import HL_Thea
-from DiffusionProfiles_calculations import DiffusionLength
-from transforms import transforms
-from Decon import SpectralDecon
-from sigmaSolver import sigma_Solver
-from SignalAttenuation import Attenuation, AnnualLayerThick
+from src.GetCoreData_fct import GetCoreData
+from src.BackDiffuse_LT import BackDiffuse
+from src.Interpolation_Class import Interpolation
+from src.HL_AnalyticThea_class import HL_Thea
+from src.DiffusionProfiles_calculations import DiffusionLength
+from src.transforms import transforms
+from src.Decon import SpectralDecon
+from src.sigmaSolver import sigma_Solver
+from src.SignalAttenuation import Attenuation, AnnualLayerThick
 
 
 '''
