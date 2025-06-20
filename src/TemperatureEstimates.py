@@ -4,19 +4,19 @@ import pandas as pd
 import openpyxl
 import scipy as sp
 
-from GetCoreData_fct import GetCoreData
+from src.GetCoreData_fct import GetCoreData
 
 import sys
 sys.path.append('../')
 
-from BackDiffuse_LT import BackDiffuse
+from src.BackDiffuse_LT import BackDiffuse
 
-from Interpolation_Class import Interpolation
+from src.Interpolation_Class import Interpolation
 
-from HL_AnalyticThea_class import HL_Thea
-from DiffusionProfiles_calculations import DiffusionLength
+from src.HL_AnalyticThea_class import HL_Thea
+from src.DiffusionProfiles_calculations import DiffusionLength
 
-from sigmaSolver import sigma_Solver
+from src.sigmaSolver import sigma_Solver
 
 
 def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
@@ -80,7 +80,7 @@ def TempEst_analytical(site, N_InInt, Accum_in = 0, T_in = 100):
     diffLensN = np.asarray(arr_DiffLens)[idxNCut]
 
         # Compute sigma due to discrete sampling (taking an average of the sampling sizes in the interval)
-    from DiffusionProfiles_calculations import sampling_sigma
+    from src.DiffusionProfiles_calculations import sampling_sigma
     dz_ave = np.mean(np.diff(depth_LT))
     dz_std = np.std(np.diff(depth_LT))
     diffLen_sample = sampling_sigma(dz_ave)

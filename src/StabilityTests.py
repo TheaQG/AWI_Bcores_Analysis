@@ -20,9 +20,9 @@ import sys
 import os
 sys.path.append('../')
 
-from BackDiffuse_LT import BackDiffuse
-from GetCoreData_fct import GetCoreData
-from Interpolation_Class import Interpolation
+from src.BackDiffuse_LT import BackDiffuse
+from src.GetCoreData_fct import GetCoreData
+from src.Interpolation_Class import Interpolation
 
 
 '''

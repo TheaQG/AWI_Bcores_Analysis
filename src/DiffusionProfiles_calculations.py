@@ -7,8 +7,8 @@ from scipy import stats
 import copy
 
 
-import diffusivity
-import HL_AnalyticThea_class
+import src.diffusivity as diffusivity
+import src.HL_AnalyticThea_class as HL_AnalyticThea_class
 
 
 class DiffusionLength():

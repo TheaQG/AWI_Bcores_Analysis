@@ -5,7 +5,7 @@ import scipy as sp
 from scipy import interpolate
 from scipy import optimize
 
-import DiffusionProfiles_calculations
+import src.DiffusionProfiles_calculations as DiffusionProfiles_calculations
 
 
 

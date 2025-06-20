@@ -2,8 +2,8 @@ import numpy as np
 import os
 import pandas as pd
 from pandas import ExcelWriter
-from HL_AnalyticThea_class import HL_Thea
-from DiffusionProfiles_calculations import DiffusionLength
+from src.HL_AnalyticThea_class import HL_Thea
+from src.DiffusionProfiles_calculations import DiffusionLength
 
 '''
         *********** TODO************
@@ -178,9 +178,9 @@ def GetCoreData(site_in, type_in='Alphabet'):
 
 
 def GetDensProfile(site_in, path_densMeas, delim_densMeas, path_isoMeas, delim_isoMeas, path_outFile, delim_outFile, area_in='Alphabet', zMeas_str = 'depth', densMeas_str = 'density'):
-    import HL_AnalyticThea_class
+    import src.HL_AnalyticThea_class as HL_AnalyticThea_class
 
-    from HL_AnalyticThea_class import HL_Thea
+    from src.HL_AnalyticThea_class import HL_Thea
 
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
@@ -253,9 +253,9 @@ def GetDensProfile(site_in, path_densMeas, delim_densMeas, path_isoMeas, delim_i
 
 
 def GetDiffProfile(site_in, path_outFile, delim_outFile, path_densMeas,delim_densMeas, path_isoMeas, delim_isoMeas, densMeas_str='density', zMeas_str='depth', dz_in=0.55):
-    import HL_AnalyticThea_class
-    from HL_AnalyticThea_class import HL_Thea
-    from DiffusionProfiles_calculations import DiffusionLength
+    import src.HL_AnalyticThea_class as HL_AnalyticThea_class
+    from src.HL_AnalyticThea_class import HL_Thea
+    from src.DiffusionProfiles_calculations import DiffusionLength
 
     CoresSpecs = pd.read_csv('/home/thea/Documents/KUFysik/MesterTesen/Data/CoreSpecs.txt', ',')
     coreNames = CoresSpecs['CoreName']

@@ -17,18 +17,18 @@ from scipy import integrate
 from scipy.fft import dct
 from scipy import signal
 import time
-from GetCoreData_fct import GetCoreData
-from SignalAttenuation import Attenuation, AnnualLayerThick
+from src.GetCoreData_fct import GetCoreData
+from src.SignalAttenuation import Attenuation, AnnualLayerThick
 
-from Decon import SpectralDecon
-from BackDiffuse_LT import BackDiffuse
+from src.Decon import SpectralDecon
+from src.BackDiffuse_LT import BackDiffuse
 
-from Interpolation_Class import Interpolation
+from src.Interpolation_Class import Interpolation
 
-from HL_AnalyticThea_class import HL_Thea
-from DiffusionProfiles_calculations import DiffusionLength
+from src.HL_AnalyticThea_class import HL_Thea
+from src.DiffusionProfiles_calculations import DiffusionLength
 
-from sigmaSolver import sigma_Solver
+from src.sigmaSolver import sigma_Solver
 
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from MEM_class import MEM
-from Decon import SpectralDecon
+from src.MEM_class import MEM
+from src.Decon import SpectralDecon
 from scipy import signal
 from scipy import interpolate
 

@@ -17,7 +17,7 @@ from scipy import integrate
 from scipy.fft import dct
 from scipy import signal
 from scipy.interpolate import interp1d, CubicSpline
-from Decon import SpectralDecon
+from src.Decon import SpectralDecon
 
 '''
         *********** TODO************

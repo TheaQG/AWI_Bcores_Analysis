@@ -16,8 +16,8 @@ from scipy import linalg
 from scipy import integrate
 from scipy.fft import dct
 from scipy import signal
-from SignalAttenuation import Attenuation, AnnualLayerThick
-from Decon import SpectralDecon
+from src.SignalAttenuation import Attenuation, AnnualLayerThick
+from src.Decon import SpectralDecon
 
 '''
         *********** TODO************

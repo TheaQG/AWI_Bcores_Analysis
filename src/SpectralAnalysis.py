@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
-from MEM_class import MEM
+from src.MEM_class import MEM
 import copy
 
 class SignalToF():
